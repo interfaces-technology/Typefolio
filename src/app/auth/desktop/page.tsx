@@ -37,7 +37,7 @@ export default async function DesktopAuthPage({ searchParams }: DesktopAuthPageP
             <CardHeader>
               <CardTitle>Desktop sign-in</CardTitle>
               <CardDescription>
-                This page is opened by the syncFont Mac app. The callback URL is
+                This page is opened by the syncFont app. The callback URL is
                 missing or invalid.
               </CardDescription>
             </CardHeader>
@@ -73,7 +73,7 @@ export default async function DesktopAuthPage({ searchParams }: DesktopAuthPageP
           <CardHeader>
             <CardTitle>Sign in to syncFont</CardTitle>
             <CardDescription>
-              Finish signing in here, then you&apos;ll return to the Mac app
+              Finish signing in here, then you&apos;ll return to the syncFont app
               automatically.
             </CardDescription>
           </CardHeader>

@@ -1,4 +1,8 @@
 import Foundation
+import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 @MainActor
 final class SyncService: ObservableObject {
@@ -6,6 +10,7 @@ final class SyncService: ObservableObject {
     @Published private(set) var activity: [SyncActivity] = []
 
     private let keychain = KeychainStore()
+    private let syncStateStore = SyncStateStore()
     private let apiClient: APIClient
     private let fontInstaller: FontInstalling
     private let scheduler: SyncScheduling
@@ -30,10 +35,12 @@ final class SyncService: ObservableObject {
                 apiClient.setBaseURL(savedURL)
                 apiClient.restoreAccessToken(from: session)
                 let me = try await apiClient.fetchMe()
+                restorePersistedSyncState(for: me.library.id)
                 state.isSignedIn = true
                 state.userEmail = session.userEmail
                 state.libraryId = me.library.id
                 state.libraryName = me.library.name
+                state.installedCount = installedFontIds.count
                 appendActivity("Restored session for \(session.userEmail).", level: .info)
 
                 if PlatformCapabilities.supportsBackgroundSync {
@@ -54,7 +61,6 @@ final class SyncService: ObservableObject {
     }
 
     func signInWithBrowser(apiBaseURLString: String) async throws {
-        #if os(macOS)
         guard let url = URL(string: apiBaseURLString.trimmingCharacters(in: .whitespacesAndNewlines)) else {
             throw SyncFontError.httpError(status: 400, message: "Enter a valid API URL.")
         }
@@ -62,11 +68,15 @@ final class SyncService: ObservableObject {
         apiBaseURL = url
         apiClient.setBaseURL(url)
 
+        #if os(macOS)
         let session = try await BrowserAuthService().signIn(apiBaseURL: url)
-        try await completeSignIn(session: session, apiBaseURL: url)
+        #elseif os(iOS)
+        let session = try await IOSBrowserAuthService().signIn(apiBaseURL: url)
         #else
         throw SyncFontError.unsupportedPlatform
         #endif
+
+        try await completeSignIn(session: session, apiBaseURL: url)
     }
 
     func signIn(email: String, password: String, apiBaseURLString: String) async throws {
@@ -85,12 +95,15 @@ final class SyncService: ObservableObject {
         try keychain.saveSession(session, apiBaseURL: url)
 
         let me = try await apiClient.fetchMe()
+        restorePersistedSyncState(for: me.library.id)
         state = SyncState(
             isSignedIn: true,
             userEmail: session.userEmail,
             libraryId: me.library.id,
             libraryName: me.library.name,
             installedCount: installedFontIds.count,
+            lastEtag: state.lastEtag,
+            deviceId: state.deviceId,
             supportsSync: PlatformCapabilities.supportsBackgroundSync,
             comingSoonMessage: PlatformCapabilities.comingSoonMessage
         )
@@ -113,6 +126,9 @@ final class SyncService: ObservableObject {
 
     func signOut() {
         scheduler.stopPolling()
+        if !state.libraryId.isEmpty {
+            syncStateStore.clear(libraryId: state.libraryId)
+        }
         installedFontIds = []
         state = SyncState(
             supportsSync: PlatformCapabilities.supportsBackgroundSync,
@@ -147,6 +163,7 @@ final class SyncService: ObservableObject {
             let manifest = try await apiClient.fetchManifest(libraryId: state.libraryId)
             if manifest.etag == state.lastEtag {
                 appendActivity("Already up to date.", level: .info)
+                persistSyncState()
                 return
             }
 
@@ -156,23 +173,37 @@ final class SyncService: ObservableObject {
                     continue
                 }
 
-                let data = try await apiClient.downloadFont(
-                    libraryId: state.libraryId,
-                    fontId: font.id
-                )
-                _ = try await fontInstaller.installFont(
-                    data: data,
-                    filename: font.originalName,
-                    expectedSHA256: font.sha256
-                )
-                installedFontIds.append(font.id)
-                installedThisRun += 1
-                appendActivity("Installed \(font.originalName).", level: .success)
+                do {
+                    let data = try await apiClient.downloadFont(
+                        libraryId: state.libraryId,
+                        fontId: font.id
+                    )
+                    _ = try await fontInstaller.installFont(
+                        data: data,
+                        filename: font.originalName,
+                        expectedSHA256: font.sha256
+                    )
+                    installedFontIds.append(font.id)
+                    installedThisRun += 1
+                    appendActivity("Installed \(font.originalName).", level: .success)
+                } catch {
+                    let level: ActivityLevel
+                    if let installError = error as? FontInstallError, installError == .unsupportedFontFormat {
+                        level = .warning
+                    } else {
+                        level = .error
+                    }
+                    appendActivity(
+                        "Skipped \(font.originalName): \(error.localizedDescription)",
+                        level: level
+                    )
+                }
             }
 
             state.lastEtag = manifest.etag
             state.lastSyncAt = Date()
             state.installedCount = installedFontIds.count
+            persistSyncState()
 
             if let deviceId = state.deviceId {
                 let iso = ISO8601DateFormatter().string(from: Date())
@@ -192,14 +223,72 @@ final class SyncService: ObservableObject {
         }
     }
 
+    func handleScenePhaseChange(_ phase: ScenePhase) {
+        #if os(iOS)
+        guard PlatformCapabilities.supportsBackgroundSync else {
+            return
+        }
+
+        switch phase {
+        case .active:
+            if state.isSignedIn, let iosScheduler = scheduler as? IOSSyncScheduler {
+                iosScheduler.resumeForegroundPolling()
+            }
+        case .background:
+            IOSSyncScheduler.scheduleBackgroundRefresh()
+        default:
+            break
+        }
+        #endif
+    }
+
     private func ensureDeviceRegistered() async throws {
-        let deviceName = Host.current().localizedName ?? "Mac"
+        if let deviceId = state.deviceId, !deviceId.isEmpty {
+            return
+        }
+
+        let deviceName = currentDeviceName()
         let device = try await apiClient.registerDevice(
             libraryId: state.libraryId,
             name: deviceName,
             platform: PlatformCapabilities.devicePlatform
         )
         state.deviceId = device.id
+        persistSyncState()
+    }
+
+    private func currentDeviceName() -> String {
+        #if os(iOS)
+        return UIDevice.current.name
+        #else
+        return Host.current().localizedName ?? "Mac"
+        #endif
+    }
+
+    private func restorePersistedSyncState(for libraryId: String) {
+        guard let persisted = syncStateStore.load(libraryId: libraryId) else {
+            return
+        }
+
+        installedFontIds = persisted.installedFontIds
+        state.lastEtag = persisted.lastEtag
+        state.deviceId = persisted.deviceId
+        state.installedCount = installedFontIds.count
+    }
+
+    private func persistSyncState() {
+        guard !state.libraryId.isEmpty else {
+            return
+        }
+
+        syncStateStore.save(
+            libraryId: state.libraryId,
+            state: PersistedSyncState(
+                installedFontIds: installedFontIds,
+                lastEtag: state.lastEtag,
+                deviceId: state.deviceId
+            )
+        )
     }
 
     private func appendActivity(_ message: String, level: ActivityLevel) {

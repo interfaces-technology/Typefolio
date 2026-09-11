@@ -7,7 +7,7 @@ Multiplatform SwiftUI client for syncFont.
 | Platform | Status |
 |----------|--------|
 | macOS | Complete — sign in, sync, auto-install to `~/Library/Fonts` |
-| iPadOS | Scaffold — sign in works; font sync/install coming later |
+| iPadOS | Complete — browser/email sign-in, sync, system font install |
 
 ## Requirements
 
@@ -24,9 +24,18 @@ swift run SyncFont
 
 Or open `Package.swift` in Xcode, select **My Mac**, and run.
 
-## Build (iPadOS scaffold)
+## Build (iPadOS)
 
-Open `Package.swift` in Xcode, select an **iPad simulator**, and run. You can sign in and see your library metadata; sync/install is disabled with a coming-soon message.
+Open `Package.swift` in Xcode, select an **iPad simulator**, and run.
+
+Or from the command line:
+
+```bash
+cd apps/SyncFont
+swift build \
+  --sdk "$(xcrun --sdk iphonesimulator --show-sdk-path)" \
+  --triple arm64-apple-ios17.0-simulator
+```
 
 ## Auth flow (macOS)
 
@@ -35,20 +44,23 @@ Open `Package.swift` in Xcode, select an **iPad simulator**, and run. You can si
 3. Sign in with email/password or Google (same account as the web app).
 4. The browser redirects back to the app with your session; the app stores it in Keychain.
 
-The app no longer asks for email/password directly on macOS — everything goes through the browser.
-
 ## Auth flow (iPadOS)
 
-Browser sign-in is coming soon. The scaffold still compiles but sync/install is disabled.
+1. Click **Sign in with browser** (recommended) or expand **Sign in with email**.
+2. Browser sign-in uses `ASWebAuthenticationSession` and returns via `syncfont://auth/callback`.
+3. Email sign-in calls the API directly — useful for local dev against `http://127.0.0.1:43123`.
 
-## After sign-in (macOS)
+## After sign-in
 
 1. App stores a bearer token in Keychain.
-2. macOS registers this device, polls the manifest every 30 seconds, downloads new fonts, verifies SHA-256, and installs to `~/Library/Fonts`.
+2. The app registers this device, polls the manifest every 30 seconds while open, and schedules background refresh when backgrounded.
+3. New fonts are downloaded, SHA-256 verified, and installed:
+   - **macOS:** `~/Library/Fonts`
+   - **iPadOS:** system font install prompt via Core Text (`.ttf` / `.otf` only; `.woff` / `.woff2` are skipped)
 
 ## API endpoints used
 
-- `GET /auth/desktop` (browser sign-in for macOS)
+- `GET /auth/desktop` (browser sign-in)
 - `GET /api/me`
 - `GET /api/libraries/:id/manifest`
 - `GET /api/libraries/:id/fonts/:fontId`

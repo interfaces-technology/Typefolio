@@ -9,7 +9,8 @@
     "start": "next start -p 43123",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "db:push": "dotenv -e .env.local -- drizzle-kit push"
+    "db:push": "dotenv -e .env.local -- drizzle-kit push",
+    "test": "node --import tsx --test src/lib/desktop-auth.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -41,6 +42,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }

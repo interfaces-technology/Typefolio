@@ -123,7 +123,7 @@ struct SyncState: Equatable {
 
 enum PlatformCapabilities {
     static var supportsBackgroundSync: Bool {
-        #if os(macOS)
+        #if os(macOS) || os(iOS)
         return true
         #else
         return false
@@ -131,11 +131,7 @@ enum PlatformCapabilities {
     }
 
     static var comingSoonMessage: String? {
-        #if os(iOS)
-        return "Font sync on iPad is coming soon. Your fonts are available on Mac and web."
-        #else
-        return nil
-        #endif
+        nil
     }
 
     static var devicePlatform: String {

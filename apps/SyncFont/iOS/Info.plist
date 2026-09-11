@@ -7,5 +7,26 @@
         <key>NSAllowsLocalNetworking</key>
         <true/>
     </dict>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLName</key>
+            <string>com.syncfont.app</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>syncfont</string>
+            </array>
+        </dict>
+    </array>
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>fetch</string>
+    </array>
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>com.syncfont.app.refresh</string>
+    </array>
 </dict>
 </plist>

@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 
 final class MacFontInstaller: FontInstalling {
@@ -40,3 +41,4 @@ final class MacSyncScheduler: SyncScheduling {
         timer = nil
     }
 }
+#endif

@@ -10,9 +10,10 @@ protocol SyncScheduling: AnyObject {
     func stopPolling()
 }
 
-enum FontInstallError: LocalizedError {
+enum FontInstallError: LocalizedError, Equatable {
     case hashMismatch
     case invalidFilename
+    case unsupportedFontFormat
 
     var errorDescription: String? {
         switch self {
@@ -20,6 +21,8 @@ enum FontInstallError: LocalizedError {
             return "Downloaded font failed integrity verification."
         case .invalidFilename:
             return "The font filename is invalid."
+        case .unsupportedFontFormat:
+            return "This font format is not supported on iPad. Use .ttf or .otf."
         }
     }
 }

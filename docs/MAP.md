@@ -9,7 +9,7 @@ Cloud API + Next.js web client + native SwiftUI apps. Fonts live in Vercel Blob;
 - **Auth:** [`src/lib/auth/`](src/lib/auth/) — Neon Auth server + client
 - **Storage:** [`src/lib/storage.ts`](src/lib/storage.ts) + [`src/lib/db/`](src/lib/db/) — Postgres + Blob
 - **Web client:** [`src/app/page.tsx`](src/app/page.tsx), [`src/app/library/`](src/app/library/), [`src/app/auth/`](src/app/auth/)
-- **Native apps:** [`apps/SyncFont/`](apps/SyncFont/) — SwiftUI macOS (sync + install) and iPadOS (scaffold)
+- **Native apps:** [`apps/SyncFont/`](apps/SyncFont/) — SwiftUI macOS and iPadOS (sync + install)
 
 ## Auth
 

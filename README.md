@@ -8,7 +8,7 @@ Upload font files once. Sign in with the same account on any device to see them.
 - Fonts stay with your account — no sync code to share
 - Download individual fonts or the full set as a ZIP
 - Native macOS app auto-installs fonts to `~/Library/Fonts`
-- Native iPad app scaffold — sign in works; sync coming later
+- Native iPad app syncs and installs fonts system-wide (`.ttf` / `.otf`)
 
 ## Run locally
 
@@ -44,7 +44,7 @@ Or open `apps/SyncFont/SyncFont.xcodeproj` in Xcode.
 1. **Sign in** on the web app or native app.
 2. **Upload** font files on the web.
 3. **macOS app** polls your library and installs new fonts locally.
-4. **iPad app** (scaffold) can sign in; font sync on iPad is coming later.
+4. **iPad app** polls your library and installs new fonts system-wide.
 
 Font files are stored in Vercel Blob. Users and metadata live in Neon.
 
@@ -68,6 +68,6 @@ The Next.js app is the first client of this API. Native apps use the same endpoi
 ## Tech stack
 
 - **API / web:** Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui
-- **Native:** SwiftUI (macOS complete, iPadOS scaffold)
+- **Native:** SwiftUI (macOS + iPadOS)
 - **Auth:** Neon Auth (Managed Better Auth)
 - **Data:** Neon Postgres + Vercel Blob
