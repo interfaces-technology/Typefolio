@@ -10,7 +10,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:push": "dotenv -e .env.local -- drizzle-kit push",
-    "test": "node --import tsx --test src/lib/desktop-auth.test.ts"
+    "test": "node --import tsx --test src/lib/desktop-auth.test.ts src/lib/font-families.test.ts src/lib/font-metadata.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -21,6 +21,7 @@
     "class-variance-authority": "^0.7.1",
     "cn": "^0.2.6",
     "drizzle-orm": "^0.45.2",
+    "fontkit": "^2.0.4",
     "lucide-react": "^1.45.0",
     "nanoid": "^6.0.1",
     "next": "16.3.4",

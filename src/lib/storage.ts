@@ -5,6 +5,8 @@ import { nanoid } from "nanoid";
 
 import { getDb } from "@/lib/db";
 import { devices, fonts, libraries } from "@/lib/db/schema";
+import { groupFontsByFamily } from "@/lib/font-families";
+import { extractFontMetadata } from "@/lib/font-metadata";
 import { getFontExtension, isAllowedFontFile } from "@/lib/font-validation";
 import { generateSyncCode } from "@/lib/sync-code";
 import type {
@@ -12,9 +14,12 @@ import type {
   Device,
   DevicePlatform,
   FontExtension,
+  FontFamilyGroup,
+  FontFamilySort,
   FontFile,
   Library,
   LibrarySummary,
+  SortOrder,
 } from "@/lib/types";
 
 function sha256Hex(buffer: Buffer): string {
@@ -33,6 +38,10 @@ function toFontFile(row: typeof fonts.$inferSelect): FontFile {
     sha256: row.sha256,
     size: row.size,
     extension: row.extension as FontExtension,
+    familyName: row.familyName ?? "Unknown",
+    styleName: row.styleName ?? undefined,
+    weight: row.weight ?? undefined,
+    postscriptName: row.postscriptName ?? undefined,
     uploadedAt: row.uploadedAt,
   };
 }
@@ -280,6 +289,7 @@ export async function addFontsToLibrary(
     const storedName = `${fontId}${extension}`;
     const pathname = fontPathname(libraryId, storedName);
     const buffer = Buffer.from(await file.arrayBuffer());
+    const metadata = extractFontMetadata(buffer, file.name);
 
     const blob = await put(pathname, buffer, {
       access: "private",
@@ -297,6 +307,10 @@ export async function addFontsToLibrary(
       sha256: sha256Hex(buffer),
       size: file.size,
       extension,
+      familyName: metadata.familyName,
+      styleName: metadata.styleName ?? null,
+      weight: metadata.weight ?? null,
+      postscriptName: metadata.postscriptName ?? null,
       uploadedAt: new Date().toISOString(),
     };
 
@@ -411,4 +425,104 @@ export async function touchLibrary(libraryId: string): Promise<void> {
     .update(libraries)
     .set({ updatedAt: new Date().toISOString() })
     .where(eq(libraries.id, libraryId));
+}
+
+export interface LibraryFontFamiliesResult {
+  libraryId: string;
+  sort: FontFamilySort;
+  order: SortOrder;
+  familyCount: number;
+  fontCount: number;
+  families: FontFamilyGroup[];
+}
+
+export async function getLibraryFontFamilies(
+  libraryId: string,
+  options: { sortBy?: FontFamilySort; order?: SortOrder } = {},
+): Promise<LibraryFontFamiliesResult | null> {
+  const library = await loadLibrary(libraryId);
+  if (!library) {
+    return null;
+  }
+
+  const sort = options.sortBy ?? "family";
+  const order = options.order ?? "asc";
+  const families = groupFontsByFamily(library.fonts, { sortBy: sort, order });
+
+  return {
+    libraryId: library.id,
+    sort,
+    order,
+    familyCount: families.length,
+    fontCount: library.fonts.length,
+    families,
+  };
+}
+
+export interface ReindexFontMetadataResult {
+  updated: number;
+  skipped: number;
+  failed: string[];
+}
+
+export async function reindexLibraryFontMetadata(
+  libraryId: string,
+  options: { force?: boolean } = {},
+): Promise<ReindexFontMetadataResult | null> {
+  const library = await loadLibrary(libraryId);
+  if (!library) {
+    return null;
+  }
+
+  const db = getDb();
+  const result: ReindexFontMetadataResult = {
+    updated: 0,
+    skipped: 0,
+    failed: [],
+  };
+
+  const fontRows = await db
+    .select()
+    .from(fonts)
+    .where(eq(fonts.libraryId, libraryId));
+
+  for (const fontRow of fontRows) {
+    const needsUpdate = options.force === true || fontRow.familyName === null;
+    if (!needsUpdate) {
+      result.skipped += 1;
+      continue;
+    }
+
+    const buffer =
+      (await bufferFromBlob(fontRow.blobPathname)) ??
+      (await bufferFromBlob(fontRow.blobUrl));
+
+    if (!buffer) {
+      result.failed.push(`${fontRow.originalName} (blob unavailable)`);
+      continue;
+    }
+
+    const metadata = extractFontMetadata(buffer, fontRow.originalName);
+
+    await db
+      .update(fonts)
+      .set({
+        familyName: metadata.familyName,
+        styleName: metadata.styleName ?? null,
+        weight: metadata.weight ?? null,
+        postscriptName: metadata.postscriptName ?? null,
+      })
+      .where(and(eq(fonts.libraryId, libraryId), eq(fonts.id, fontRow.id)));
+
+    result.updated += 1;
+  }
+
+  if (result.updated > 0) {
+    await db
+      .update(libraries)
+      .set({ updatedAt: new Date().toISOString() })
+      .where(eq(libraries.id, libraryId));
+  }
+
+  return result;
 }
