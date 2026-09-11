@@ -129,6 +129,27 @@ export async function createLibrary(
   };
 }
 
+export async function getOrCreateUserLibrary(
+  ownerUserId: string,
+): Promise<Library> {
+  const db = getDb();
+  const [row] = await db
+    .select()
+    .from(libraries)
+    .where(eq(libraries.ownerUserId, ownerUserId))
+    .orderBy(desc(libraries.updatedAt))
+    .limit(1);
+
+  if (row) {
+    const existing = await loadLibrary(row.id);
+    if (existing) {
+      return existing;
+    }
+  }
+
+  return createLibrary(ownerUserId, { name: "My fonts" });
+}
+
 export async function listLibrariesForUser(
   ownerUserId: string,
 ): Promise<LibrarySummary[]> {

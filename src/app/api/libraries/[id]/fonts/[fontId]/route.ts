@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { requireLibraryAccess, requireLibraryOwner } from "@/lib/access";
+import { requireLibraryOwner } from "@/lib/access";
 import { deleteFont, getFontBuffer } from "@/lib/storage";
 
 interface RouteContext {
   params: Promise<{ id: string; fontId: string }>;
 }
 
-export async function GET(request: Request, context: RouteContext) {
+export async function GET(_request: Request, context: RouteContext) {
   const { id, fontId } = await context.params;
-  const access = await requireLibraryAccess(id, request);
+  const access = await requireLibraryOwner(id);
 
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });

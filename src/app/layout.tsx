@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "syncFont — Sync fonts across devices",
+  title: "syncFont — Your fonts, on every device",
   description:
-    "Upload font files on one device, share a sync code, and download the same library anywhere.",
+    "Upload font files once. Sign in with the same account on any device to see them.",
 };
 
 export const dynamic = "force-dynamic";

@@ -10,13 +10,12 @@ import { uploadFonts } from "@/lib/api";
 import type { Library } from "@/lib/types";
 
 interface UploadZoneProps {
-  libraryId: string;
   onUploaded: (library: Library) => void;
 }
 
 const acceptedTypes = FONT_EXTENSIONS.join(",");
 
-export function UploadZone({ libraryId, onUploaded }: UploadZoneProps) {
+export function UploadZone({ onUploaded }: UploadZoneProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -30,7 +29,7 @@ export function UploadZone({ libraryId, onUploaded }: UploadZoneProps) {
     setIsUploading(true);
 
     try {
-      const result = await uploadFonts(libraryId, files);
+      const result = await uploadFonts(files);
       onUploaded(result.library);
 
       if (result.added > 0) {

@@ -33,7 +33,7 @@ export default function SignUpPage() {
           <CardHeader>
             <CardTitle>Create account</CardTitle>
             <CardDescription>
-              Save your fonts in the cloud and open them from any client.
+              Save your fonts to your account and open them anywhere you sign in.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

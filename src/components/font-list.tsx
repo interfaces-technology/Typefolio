@@ -13,8 +13,6 @@ interface FontListProps {
   libraryId: string;
   fonts: FontFile[];
   showDownloadAll?: boolean;
-  libraryName?: string;
-  syncCode?: string;
   canDelete?: boolean;
   onDeleted?: (fontId: string) => void;
 }
@@ -23,8 +21,6 @@ export function FontList({
   libraryId,
   fonts,
   showDownloadAll = true,
-  libraryName,
-  syncCode,
   canDelete = false,
   onDeleted,
 }: FontListProps) {
@@ -60,7 +56,7 @@ export function FontList({
       {showDownloadAll && (
         <div className="flex justify-end">
           <a
-            href={libraryZipPath(libraryId, syncCode)}
+            href={libraryZipPath(libraryId)}
             download
             className={cn(buttonVariants())}
           >
@@ -85,7 +81,7 @@ export function FontList({
             </div>
             <div className="flex shrink-0 gap-2">
               <a
-                href={fontDownloadPath(libraryId, font.id, syncCode)}
+                href={fontDownloadPath(libraryId, font.id)}
                 download={font.originalName}
                 className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
               >
@@ -107,12 +103,6 @@ export function FontList({
           </li>
         ))}
       </ul>
-
-      {libraryName && (
-        <p className="text-xs text-muted-foreground">
-          {fonts.length} font{fonts.length === 1 ? "" : "s"} in {libraryName}
-        </p>
-      )}
     </div>
   );
 }

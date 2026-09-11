@@ -33,7 +33,7 @@ export default function SignInPage() {
           <CardHeader>
             <CardTitle>Sign in</CardTitle>
             <CardDescription>
-              Access your font libraries from any device.
+              Sign in to see your fonts on this device.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
