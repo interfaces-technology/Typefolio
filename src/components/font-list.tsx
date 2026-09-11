@@ -1,27 +1,44 @@
 "use client";
 
-import { Download, FileType2 } from "lucide-react";
+import { Download, FileType2, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
-import Link from "next/link";
-
-import { buttonVariants } from "@/components/ui/button";
+import { buttonVariants, Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@/lib/font-validation";
+import { deleteFont, fontDownloadPath, libraryZipPath } from "@/lib/api";
 import type { FontFile } from "@/lib/types";
 
 interface FontListProps {
   libraryId: string;
   fonts: FontFile[];
   showDownloadAll?: boolean;
-  libraryName?: string;
+  canDelete?: boolean;
+  onDeleted?: (fontId: string) => void;
 }
 
 export function FontList({
   libraryId,
   fonts,
   showDownloadAll = true,
-  libraryName,
+  canDelete = false,
+  onDeleted,
 }: FontListProps) {
+  async function handleDelete(font: FontFile) {
+    const confirmed = window.confirm(`Delete ${font.originalName}?`);
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await deleteFont(libraryId, font.id);
+      toast.success(`Deleted ${font.originalName}`);
+      onDeleted?.(font.id);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete font");
+    }
+  }
+
   if (fonts.length === 0) {
     return (
       <div className="rounded-xl border border-dashed p-8 text-center">
@@ -39,7 +56,7 @@ export function FontList({
       {showDownloadAll && (
         <div className="flex justify-end">
           <a
-            href={`/api/libraries/${libraryId}/download`}
+            href={libraryZipPath(libraryId)}
             download
             className={cn(buttonVariants())}
           >
@@ -62,23 +79,30 @@ export function FontList({
                 {formatFileSize(font.size)}
               </p>
             </div>
-            <a
-              href={`/api/libraries/${libraryId}/fonts/${font.id}`}
-              download={font.originalName}
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}
-            >
-              <Download className="size-4" />
-              Download
-            </a>
+            <div className="flex shrink-0 gap-2">
+              <a
+                href={fontDownloadPath(libraryId, font.id)}
+                download={font.originalName}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                <Download className="size-4" />
+                Download
+              </a>
+              {canDelete && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void handleDelete(font)}
+                >
+                  <Trash2 className="size-4" />
+                  Delete
+                </Button>
+              )}
+            </div>
           </li>
         ))}
       </ul>
-
-      {libraryName && (
-        <p className="text-xs text-muted-foreground">
-          {fonts.length} font{fonts.length === 1 ? "" : "s"} in {libraryName}
-        </p>
-      )}
     </div>
   );
 }

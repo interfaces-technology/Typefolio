@@ -1,18 +1,27 @@
 import { NextResponse } from "next/server";
 
+import { requireLibraryOwner } from "@/lib/access";
 import { getLibraryById } from "@/lib/storage";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const library = await getLibraryById(id);
+  const access = await requireLibraryOwner(id, request);
 
-  if (!library) {
-    return NextResponse.json({ error: "Library not found" }, { status: 404 });
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  return NextResponse.json({ library });
+  const library = await getLibraryById(id);
+  if (!library) {
+    return NextResponse.json({ error: "Library not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    library,
+    isOwner: true,
+  });
 }

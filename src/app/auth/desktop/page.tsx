@@ -1,0 +1,87 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+
+import { DesktopSignInForm } from "@/components/desktop-sign-in-form";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { cn } from "cn";
+import { auth } from "@/lib/auth/server";
+import {
+  buildDesktopCallbackUrl,
+  isAllowedDesktopRedirectUri,
+} from "@/lib/desktop-auth";
+
+export const dynamic = "force-dynamic";
+
+interface DesktopAuthPageProps {
+  searchParams: Promise<{ redirect_uri?: string }>;
+}
+
+const SESSION_COOKIE_NAME = "__Secure-neon-auth.session_token";
+
+export default async function DesktopAuthPage({ searchParams }: DesktopAuthPageProps) {
+  const { redirect_uri: redirectUri } = await searchParams;
+
+  if (!isAllowedDesktopRedirectUri(redirectUri)) {
+    return (
+      <div className="flex min-h-full flex-col">
+        <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10 sm:px-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Desktop sign-in</CardTitle>
+              <CardDescription>
+                This page is opened by the syncFont app. The callback URL is
+                missing or invalid.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/" className={cn(buttonVariants({ variant: "outline" }))}>
+                Back to syncFont
+              </Link>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
+  const { data: session } = await auth.getSession();
+  const cookieStore = await cookies();
+  const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+  if (session?.user && sessionToken) {
+    redirect(
+      buildDesktopCallbackUrl(
+        redirectUri!,
+        sessionToken,
+        session.user.email ?? session.user.name ?? "user",
+      ),
+    );
+  }
+
+  return (
+    <div className="flex min-h-full flex-col">
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10 sm:px-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Sign in to syncFont</CardTitle>
+            <CardDescription>
+              Finish signing in here, then you&apos;ll return to the syncFont app
+              automatically.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DesktopSignInForm redirectUri={redirectUri!} />
+          </CardContent>
+        </Card>
+      </main>
+    </div>
+  );
+}

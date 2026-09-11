@@ -1,18 +1,16 @@
 # syncFont
 
-Sync font files across your devices. Upload fonts on one machine, share a sync code, and keep every device in sync — with optional **auto-install** via the macOS desktop client.
+Upload font files once. Sign in with the same account on any device to see them.
 
 ## Features
 
-- Create named font libraries (for example "Work fonts", "Brand A")
-- Upload `.ttf`, `.otf`, `.woff`, and `.woff2` files
-- Share a human-friendly sync code (`FONT-ABCD-1234`) or link
-- Download individual fonts or the full library as a ZIP (web UI)
-- **Desktop client (macOS):** connect with sync code → download + auto-install → poll for changes every 30s
+- Sign in and upload `.ttf`, `.otf`, `.woff`, and `.woff2` files
+- Fonts stay with your account — no sync code to share
+- Download individual fonts or the full set as a ZIP
+- Native macOS app auto-installs fonts to `~/Library/Fonts`
+- Native iPad app syncs and installs fonts system-wide (`.ttf` / `.otf`)
 
 ## Run locally
-
-### API + web UI
 
 ```bash
 npm install
@@ -21,58 +19,55 @@ npm run dev
 
 Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
 
-### Desktop client (macOS auto-install)
-
-Requires [Tauri prerequisites](https://tauri.app/start/prerequisites/).
+To run the API and macOS app together (frees port 43123 first if needed):
 
 ```bash
-# Terminal 1 — API
-npm run dev
-
-# Terminal 2 — client
-cd client
-npm install
-npm run tauri dev
+npm run dev:all
 ```
 
-In the client, enter your sync code and the API URL (`http://127.0.0.1:43123` by default). Fonts are copied to `~/Library/Fonts` and the client polls the manifest every 30 seconds.
+Requires Neon (Postgres + Auth) and Vercel Blob environment variables in `.env.local`.
 
-See [`client/README.md`](client/README.md) for build instructions.
+## Native app (macOS + iPad)
+
+See [`apps/SyncFont/README.md`](apps/SyncFont/README.md).
+
+```bash
+cd apps/SyncFont
+swift build
+swift run SyncFont
+```
+
+Or open `apps/SyncFont/SyncFont.xcodeproj` in Xcode.
 
 ## How it works
 
-1. **Create** a library in the web app.
-2. **Upload** font files on the library page.
-3. **Share** the sync code with another device.
-4. **Web path:** open the sync link and download fonts manually.
-5. **Client path:** install the desktop app, enter the sync code, and fonts auto-install on macOS.
+1. **Sign in** on the web app or native app.
+2. **Upload** font files on the web.
+3. **macOS app** polls your library and installs new fonts locally.
+4. **iPad app** polls your library and installs new fonts system-wide.
 
-Font files are stored on the server filesystem under `.data/` by default. Set `SYNCFONT_DATA_DIR` to use a different directory.
+Font files are stored in Vercel Blob. Users and metadata live in Neon.
 
-## API endpoints (client)
+## API
+
+The Next.js app is the first client of this API. Native apps use the same endpoints with `Authorization: Bearer …`.
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| `GET` | `/api/libraries/by-code/:code` | None | Resolve library by sync code |
-| `GET` | `/api/libraries/:id/manifest` | `X-Sync-Code` | Font manifest with SHA-256 + etag |
-| `GET` | `/api/libraries/:id/fonts/:fontId` | None | Download single font |
-| `POST` | `/api/libraries/:id/devices` | `X-Sync-Code` | Register device |
-| `PATCH` | `/api/libraries/:id/devices/:deviceId` | `X-Sync-Code` | Report sync status |
-
-Architecture details: see the project plan docs for API + client design.
-
-## Security notes
-
-- **No user accounts in v1.** Anyone with the sync code can access and download that library. Treat codes like passwords.
-- Client routes validate `X-Sync-Code` against the library id.
-- Basic in-memory rate limiting applies to library creation and uploads (resets on server restart).
-- For production, use HTTPS, persistent storage, and consider expiring or rotating sync codes.
+| `POST` | `/api/auth/*` | — | Neon Auth (sign up, sign in, session, access token) |
+| `GET` | `/api/me` | Session or Bearer | Current user + library metadata |
+| `POST` | `/api/fonts` | Session or Bearer | Upload fonts |
+| `GET` | `/api/libraries/:id` | Session or Bearer (owner) | Get the collection |
+| `GET` | `/api/libraries/:id/manifest` | Session or Bearer (owner) | Font manifest + etag |
+| `GET` | `/api/libraries/:id/fonts/:fontId` | Session or Bearer (owner) | Download a font |
+| `DELETE` | `/api/libraries/:id/fonts/:fontId` | Session or Bearer (owner) | Delete a font |
+| `GET` | `/api/libraries/:id/download` | Session or Bearer (owner) | Download all fonts as ZIP |
+| `POST` | `/api/libraries/:id/devices` | Session or Bearer (owner) | Register a device |
+| `PATCH` | `/api/libraries/:id/devices/:deviceId` | Session or Bearer (owner) | Report sync status |
 
 ## Tech stack
 
 - **API / web:** Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui
-- **Desktop client:** Tauri v2, Rust, React
-
-## Cloud storage (future)
-
-v1 uses local disk storage. For production deployments on Vercel or similar, replace the filesystem layer in `src/lib/storage.ts` with S3, R2, or another object store and keep library metadata in a database.
+- **Native:** SwiftUI (macOS + iPadOS)
+- **Auth:** Neon Auth (Managed Better Auth)
+- **Data:** Neon Postgres + Vercel Blob

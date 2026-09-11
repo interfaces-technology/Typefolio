@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { validateSyncCodeForLibrary } from "@/lib/auth";
-import { registerDevice } from "@/lib/devices";
-import { getLibraryById } from "@/lib/storage";
+import { requireLibraryOwner } from "@/lib/access";
+import { listDevices, registerDevice } from "@/lib/devices";
 import type { DevicePlatform } from "@/lib/types";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-const PLATFORMS: DevicePlatform[] = ["macos", "windows", "linux"];
+const PLATFORMS: DevicePlatform[] = ["macos", "windows", "linux", "ios"];
 
 function isDevicePlatform(value: unknown): value is DevicePlatform {
   return typeof value === "string" && PLATFORMS.includes(value as DevicePlatform);
@@ -17,32 +16,22 @@ function isDevicePlatform(value: unknown): value is DevicePlatform {
 
 export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const auth = await validateSyncCodeForLibrary(
-    id,
-    request.headers.get("x-sync-code"),
-  );
+  const access = await requireLibraryOwner(id, request);
 
-  if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  const library = await getLibraryById(id);
-  if (!library) {
-    return NextResponse.json({ error: "Library not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ devices: library.devices ?? [] });
+  const devices = await listDevices(id);
+  return NextResponse.json({ devices });
 }
 
 export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const auth = await validateSyncCodeForLibrary(
-    id,
-    request.headers.get("x-sync-code"),
-  );
+  const access = await requireLibraryOwner(id, request);
 
-  if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   const body = (await request.json()) as {
@@ -56,7 +45,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   if (!isDevicePlatform(body.platform)) {
     return NextResponse.json(
-      { error: "Platform must be macos, windows, or linux." },
+      { error: "Platform must be macos, windows, linux, or ios." },
       { status: 400 },
     );
   }
