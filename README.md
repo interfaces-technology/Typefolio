@@ -1,6 +1,10 @@
-# syncFont
+# Typefolio
 
-Upload font files once. Sign in with the same account on any device to see them.
+Your fonts, on every device.
+
+Upload font files once. Sign in with the same account on web, Mac, or iPad to sync and install them.
+
+Product strategy, pricing, and billing decisions: [`docs/PRODUCT.md`](docs/PRODUCT.md).
 
 ## Features
 
@@ -71,3 +75,7 @@ The Next.js app is the first client of this API. Native apps use the same endpoi
 - **Native:** SwiftUI (macOS + iPadOS)
 - **Auth:** Neon Auth (Managed Better Auth)
 - **Data:** Neon Postgres + Vercel Blob
+
+## Repo
+
+https://github.com/interfaces-technology/Typefolio

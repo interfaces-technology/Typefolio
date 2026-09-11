@@ -1,6 +1,8 @@
-# syncFont map
+# Typefolio map
 
 Cloud API + Next.js web client + native SwiftUI apps. Fonts live in Vercel Blob; users and metadata live in Neon.
+
+**Product strategy:** see [`docs/PRODUCT.md`](PRODUCT.md) (naming, pricing, billing, launch scope).
 
 ## Areas
 

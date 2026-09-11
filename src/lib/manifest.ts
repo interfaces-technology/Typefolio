@@ -9,6 +9,10 @@ export interface FontManifestEntry {
   sha256: string;
   size: number;
   extension: FontFile["extension"];
+  familyName: string;
+  styleName?: string;
+  weight?: number;
+  postscriptName?: string;
   uploadedAt: string;
 }
 
@@ -41,6 +45,10 @@ export async function getLibraryManifest(
     sha256: font.sha256,
     size: font.size,
     extension: font.extension,
+    familyName: font.familyName,
+    styleName: font.styleName,
+    weight: font.weight,
+    postscriptName: font.postscriptName,
     uploadedAt: font.uploadedAt,
   }));
 

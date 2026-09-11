@@ -56,6 +56,9 @@ struct FontManifestEntry: Codable, Identifiable {
     let sha256: String
     let size: Int
     let fileExtension: String
+    let familyName: String?
+    let styleName: String?
+    let weight: Int?
     let uploadedAt: String
 
     enum CodingKeys: String, CodingKey {
@@ -64,6 +67,9 @@ struct FontManifestEntry: Codable, Identifiable {
         case sha256
         case size
         case fileExtension = "extension"
+        case familyName
+        case styleName
+        case weight
         case uploadedAt
     }
 }

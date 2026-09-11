@@ -2,7 +2,14 @@ export const FONT_EXTENSIONS = [".ttf", ".otf", ".woff", ".woff2"] as const;
 
 export type FontExtension = (typeof FONT_EXTENSIONS)[number];
 
-export interface FontFile {
+export interface FontMetadata {
+  familyName: string;
+  styleName?: string;
+  weight?: number;
+  postscriptName?: string;
+}
+
+export interface FontFile extends FontMetadata {
   id: string;
   originalName: string;
   storedName: string;
@@ -11,6 +18,15 @@ export interface FontFile {
   extension: FontExtension;
   uploadedAt: string;
 }
+
+export interface FontFamilyGroup {
+  familyName: string;
+  styleCount: number;
+  fonts: FontFile[];
+}
+
+export type FontFamilySort = "family" | "uploadedAt";
+export type SortOrder = "asc" | "desc";
 
 export type DevicePlatform = "macos" | "windows" | "linux" | "ios";
 

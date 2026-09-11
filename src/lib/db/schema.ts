@@ -42,9 +42,16 @@ export const fonts = pgTable(
     sha256: text("sha256").notNull(),
     size: integer("size").notNull(),
     extension: text("extension").notNull(),
+    familyName: text("family_name"),
+    styleName: text("style_name"),
+    weight: integer("weight"),
+    postscriptName: text("postscript_name"),
     uploadedAt: timestamptz("uploaded_at").notNull(),
   },
-  (table) => [index("fonts_library_id_idx").on(table.libraryId)],
+  (table) => [
+    index("fonts_library_id_idx").on(table.libraryId),
+    index("fonts_library_family_name_idx").on(table.libraryId, table.familyName),
+  ],
 );
 
 export const devices = pgTable(
