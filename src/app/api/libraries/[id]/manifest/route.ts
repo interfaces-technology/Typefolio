@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { validateSyncCodeForLibrary } from "@/lib/auth";
+import { requireLibraryAccess } from "@/lib/access";
 import { getLibraryManifest } from "@/lib/manifest";
 
 interface RouteContext {
@@ -9,18 +9,15 @@ interface RouteContext {
 
 export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const auth = await validateSyncCodeForLibrary(
-    id,
-    request.headers.get("x-sync-code"),
-  );
+  const access = await requireLibraryAccess(id, request);
 
-  if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   const manifest = await getLibraryManifest(id);
   if (!manifest) {
-    return NextResponse.json({ error: "Library not found" }, { status: 404 });
+    return NextResponse.json({ error: "Library not found." }, { status: 404 });
   }
 
   return NextResponse.json({ manifest });

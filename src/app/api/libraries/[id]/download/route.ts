@@ -2,14 +2,21 @@ import { ZipArchive } from "archiver";
 import { NextResponse } from "next/server";
 import { PassThrough } from "stream";
 
+import { requireLibraryAccess } from "@/lib/access";
 import { getAllFontBuffers, getLibraryById } from "@/lib/storage";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
+  const access = await requireLibraryAccess(id, request);
+
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
   const library = await getLibraryById(id);
 
   if (!library) {

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { validateSyncCodeForLibrary } from "@/lib/auth";
-import { registerDevice } from "@/lib/devices";
-import { getLibraryById } from "@/lib/storage";
+import { requireLibraryAccess } from "@/lib/access";
+import { listDevices, registerDevice } from "@/lib/devices";
 import type { DevicePlatform } from "@/lib/types";
 
 interface RouteContext {
@@ -17,32 +16,22 @@ function isDevicePlatform(value: unknown): value is DevicePlatform {
 
 export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const auth = await validateSyncCodeForLibrary(
-    id,
-    request.headers.get("x-sync-code"),
-  );
+  const access = await requireLibraryAccess(id, request);
 
-  if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
-  const library = await getLibraryById(id);
-  if (!library) {
-    return NextResponse.json({ error: "Library not found" }, { status: 404 });
-  }
-
-  return NextResponse.json({ devices: library.devices ?? [] });
+  const devices = await listDevices(id);
+  return NextResponse.json({ devices });
 }
 
 export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const auth = await validateSyncCodeForLibrary(
-    id,
-    request.headers.get("x-sync-code"),
-  );
+  const access = await requireLibraryAccess(id, request);
 
-  if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   const body = (await request.json()) as {

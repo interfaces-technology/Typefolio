@@ -26,6 +26,7 @@ export interface Device {
 
 export interface Library {
   id: string;
+  ownerUserId: string;
   name: string;
   description?: string;
   syncCode: string;

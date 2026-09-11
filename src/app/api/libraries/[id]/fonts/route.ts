@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { requireLibraryOwner } from "@/lib/access";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { addFontsToLibrary } from "@/lib/storage";
 
@@ -9,6 +10,12 @@ interface RouteContext {
 
 export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
+  const access = await requireLibraryOwner(id);
+
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   const rateLimit = checkRateLimit(`upload-fonts:${ip}`, 30, 60_000);

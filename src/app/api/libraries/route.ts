@@ -1,10 +1,30 @@
 import { NextResponse } from "next/server";
 
+import { requireSession } from "@/lib/access";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { createLibrary, toLibrarySummary } from "@/lib/storage";
+import {
+  createLibrary,
+  listLibrariesForUser,
+  toLibrarySummary,
+} from "@/lib/storage";
 import type { CreateLibraryInput } from "@/lib/types";
 
+export async function GET() {
+  const session = await requireSession();
+  if (!session.ok) {
+    return NextResponse.json({ error: session.error }, { status: session.status });
+  }
+
+  const libraries = await listLibrariesForUser(session.userId!);
+  return NextResponse.json({ libraries });
+}
+
 export async function POST(request: Request) {
+  const session = await requireSession();
+  if (!session.ok) {
+    return NextResponse.json({ error: session.error }, { status: session.status });
+  }
+
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   const rateLimit = checkRateLimit(`create-library:${ip}`, 20, 60_000);
@@ -41,10 +61,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const library = await createLibrary({
+  const library = await createLibrary(session.userId!, {
     name,
     description: body.description?.trim(),
   });
 
-  return NextResponse.json({ library: toLibrarySummary(library) });
+  return NextResponse.json({ library: toLibrarySummary(library) }, { status: 201 });
 }

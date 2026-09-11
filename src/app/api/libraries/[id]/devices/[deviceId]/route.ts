@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { validateSyncCodeForLibrary } from "@/lib/auth";
+import { requireLibraryAccess } from "@/lib/access";
 import { updateDevice } from "@/lib/devices";
 
 interface RouteContext {
@@ -9,13 +9,10 @@ interface RouteContext {
 
 export async function PATCH(request: Request, context: RouteContext) {
   const { id, deviceId } = await context.params;
-  const auth = await validateSyncCodeForLibrary(
-    id,
-    request.headers.get("x-sync-code"),
-  );
+  const access = await requireLibraryAccess(id, request);
 
-  if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
   const body = (await request.json()) as {
@@ -23,10 +20,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     installedFontIds?: string[];
   };
 
-  if (
-    body.lastSyncAt !== undefined &&
-    typeof body.lastSyncAt !== "string"
-  ) {
+  if (body.lastSyncAt !== undefined && typeof body.lastSyncAt !== "string") {
     return NextResponse.json(
       { error: "lastSyncAt must be an ISO timestamp string." },
       { status: 400 },
