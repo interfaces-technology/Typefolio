@@ -2,6 +2,8 @@
 
 Cloud API + Next.js web client + native SwiftUI apps. Fonts live in Vercel Blob; users and metadata live in Neon.
 
+**Product strategy:** see [`docs/PRODUCT.md`](PRODUCT.md) (Typefolio naming, pricing, billing, launch scope).
+
 ## Areas
 
 - **API:** [`src/app/api/`](src/app/api/) — auth, font upload, font download, manifest, devices
@@ -9,6 +11,8 @@ Cloud API + Next.js web client + native SwiftUI apps. Fonts live in Vercel Blob;
 - **Auth:** [`src/lib/auth/`](src/lib/auth/) — Neon Auth server + client
 - **Storage:** [`src/lib/storage.ts`](src/lib/storage.ts) + [`src/lib/db/`](src/lib/db/) — Postgres + Blob
 - **Web client:** [`src/app/page.tsx`](src/app/page.tsx), [`src/app/library/`](src/app/library/), [`src/app/auth/`](src/app/auth/)
+- **Marketplace:** [`src/app/marketplace/`](src/app/marketplace/), [`src/lib/marketplace/`](src/lib/marketplace/), [`src/lib/entitlements.ts`](src/lib/entitlements.ts)
+- **Foundry portal:** [`src/app/foundry/`](src/app/foundry/), [`src/lib/foundry.ts`](src/lib/foundry.ts), [`src/lib/stripe/`](src/lib/stripe/)
 - **Native apps:** [`apps/SyncFont/`](apps/SyncFont/) — SwiftUI macOS and iPadOS (sync + install)
 
 ## Auth
