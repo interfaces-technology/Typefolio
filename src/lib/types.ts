@@ -6,9 +6,22 @@ export interface FontFile {
   id: string;
   originalName: string;
   storedName: string;
+  sha256: string;
   size: number;
   extension: FontExtension;
   uploadedAt: string;
+}
+
+export type DevicePlatform = "macos" | "windows" | "linux";
+
+export interface Device {
+  id: string;
+  name: string;
+  platform: DevicePlatform;
+  registeredAt: string;
+  lastSeenAt: string;
+  lastSyncAt?: string;
+  installedFontIds: string[];
 }
 
 export interface Library {
@@ -17,6 +30,7 @@ export interface Library {
   description?: string;
   syncCode: string;
   fonts: FontFile[];
+  devices?: Device[];
   createdAt: string;
   updatedAt: string;
 }

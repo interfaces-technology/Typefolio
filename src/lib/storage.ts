@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
@@ -54,6 +55,40 @@ async function writeLibrary(library: Library): Promise<void> {
   );
 }
 
+export async function writeLibrarySnapshot(library: Library): Promise<void> {
+  await writeLibrary(library);
+}
+
+function sha256Hex(buffer: Buffer): string {
+  return createHash("sha256").update(buffer).digest("hex");
+}
+
+async function ensureFontHashes(library: Library): Promise<boolean> {
+  let changed = false;
+
+  for (const font of library.fonts) {
+    if (font.sha256) {
+      continue;
+    }
+
+    try {
+      const buffer = await fs.readFile(
+        getFontFilePath(library.id, font.storedName),
+      );
+      font.sha256 = sha256Hex(buffer);
+      changed = true;
+    } catch {
+      // Skip missing files
+    }
+  }
+
+  if (changed) {
+    await writeLibrary(library);
+  }
+
+  return changed;
+}
+
 async function findLibraryBySyncCode(syncCode: string): Promise<Library | null> {
   await ensureDataDir();
   const entries = await fs.readdir(librariesDir(), { withFileTypes: true });
@@ -105,13 +140,21 @@ export async function createLibrary(
 
 export async function getLibraryById(id: string): Promise<Library | null> {
   await ensureDataDir();
-  return readLibrary(id);
+  const library = await readLibrary(id);
+  if (library) {
+    await ensureFontHashes(library);
+  }
+  return library;
 }
 
 export async function getLibraryBySyncCode(
   syncCode: string,
 ): Promise<Library | null> {
-  return findLibraryBySyncCode(syncCode);
+  const library = await findLibraryBySyncCode(syncCode);
+  if (!library) {
+    return null;
+  }
+  return getLibraryById(library.id);
 }
 
 export async function addFontsToLibrary(
@@ -148,6 +191,7 @@ export async function addFontsToLibrary(
       id: fontId,
       originalName: file.name,
       storedName,
+      sha256: sha256Hex(buffer),
       size: file.size,
       extension,
       uploadedAt: new Date().toISOString(),
