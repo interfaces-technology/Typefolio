@@ -47,3 +47,6 @@ next-env.d.ts
 
 # syncFont local storage
 .data/
+
+# Swift Package Manager
+.build/

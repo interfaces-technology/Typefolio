@@ -7,9 +7,9 @@ interface RouteContext {
   params: Promise<{ id: string; fontId: string }>;
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { id, fontId } = await context.params;
-  const access = await requireLibraryOwner(id);
+  const access = await requireLibraryOwner(id, request);
 
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
@@ -32,9 +32,9 @@ export async function GET(_request: Request, context: RouteContext) {
   });
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   const { id, fontId } = await context.params;
-  const access = await requireLibraryOwner(id);
+  const access = await requireLibraryOwner(id, request);
 
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });

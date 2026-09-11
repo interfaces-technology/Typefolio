@@ -10,7 +10,7 @@ interface RouteContext {
 
 export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const access = await requireLibraryOwner(id);
+  const access = await requireLibraryOwner(id, request);
 
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });

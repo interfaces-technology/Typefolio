@@ -9,9 +9,9 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const access = await requireLibraryOwner(id);
+  const access = await requireLibraryOwner(id, request);
 
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });

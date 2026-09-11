@@ -12,7 +12,7 @@ export interface FontFile {
   uploadedAt: string;
 }
 
-export type DevicePlatform = "macos" | "windows" | "linux";
+export type DevicePlatform = "macos" | "windows" | "linux" | "ios";
 
 export interface Device {
   id: string;

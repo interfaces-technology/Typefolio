@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireLibraryAccess } from "@/lib/access";
+import { requireLibraryOwner } from "@/lib/access";
 import { getLibraryManifest } from "@/lib/manifest";
 
 interface RouteContext {
@@ -9,7 +9,7 @@ interface RouteContext {
 
 export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const access = await requireLibraryAccess(id, request);
+  const access = await requireLibraryOwner(id, request);
 
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });

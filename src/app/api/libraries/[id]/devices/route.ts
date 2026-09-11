@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireLibraryAccess } from "@/lib/access";
+import { requireLibraryOwner } from "@/lib/access";
 import { listDevices, registerDevice } from "@/lib/devices";
 import type { DevicePlatform } from "@/lib/types";
 
@@ -8,7 +8,7 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
-const PLATFORMS: DevicePlatform[] = ["macos", "windows", "linux"];
+const PLATFORMS: DevicePlatform[] = ["macos", "windows", "linux", "ios"];
 
 function isDevicePlatform(value: unknown): value is DevicePlatform {
   return typeof value === "string" && PLATFORMS.includes(value as DevicePlatform);
@@ -16,7 +16,7 @@ function isDevicePlatform(value: unknown): value is DevicePlatform {
 
 export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const access = await requireLibraryAccess(id, request);
+  const access = await requireLibraryOwner(id, request);
 
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
@@ -28,7 +28,7 @@ export async function GET(request: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   const { id } = await context.params;
-  const access = await requireLibraryAccess(id, request);
+  const access = await requireLibraryOwner(id, request);
 
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
@@ -45,7 +45,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   if (!isDevicePlatform(body.platform)) {
     return NextResponse.json(
-      { error: "Platform must be macos, windows, or linux." },
+      { error: "Platform must be macos, windows, linux, or ios." },
       { status: 400 },
     );
   }

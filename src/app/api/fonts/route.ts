@@ -5,7 +5,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { addFontsToLibrary, getOrCreateUserLibrary } from "@/lib/storage";
 
 export async function POST(request: Request) {
-  const session = await requireSession();
+  const session = await requireSession(request);
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
