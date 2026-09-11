@@ -48,20 +48,84 @@ Subscription-first. Polar was considered early; **RevenueCat + Stripe** is the c
 
 | Plan | Price (GBP) | Includes |
 |------|-------------|----------|
-| **Free** | £0 | ~50 MB storage, 1 device, manual download |
-| **Pro Monthly** | £4.99/mo | ~500 MB, 2 devices, auto-sync + install |
-| **Pro Annual** | £39.99/yr | Same as Pro (~£3.33/mo); default upsell |
-| **Founding** (launch only) | £69 one-time | Same as Pro, capped; first ~200 users; then close |
+| **Free** | £0 | ~50 MB storage, 1 device, manual download (web only) |
+| **Pro Annual** | **£40/yr** | ~500 MB, 2 devices, auto-sync + install; default upsell (~£3.33/mo) |
+| **Pro Monthly** | £4.99/mo | Same as Pro annual; for users who prefer monthly billing |
+| **Pro Launch** | **£20/yr** | Same as Pro; **50% off** regular annual price for early adopters |
 
-### Launch discount
+### Launch pricing
 
-- Prefer **limited founding lifetime** (capped storage/devices) over open-ended cheap lifetime.
-- Optional: 14-day Pro trial or 50% off first year for early signups.
-- Close founding offer when seats are full → subscription only.
+- **Anchor:** £40/year is the regular Pro annual price.
+- **Launch offer:** **50% off → £20/year** for early adopters.
+- **Grandfathering:** launch subscribers keep **£20/year** locked in (loyalty, simple story).
+- **Messaging:** *“Launch pricing: £20/year — locked in for early users.”*
+- Close launch pricing when ready (seat cap or date) → new signups pay **£40/year**.
 
-### Lifetime economics
+### Free tier as acquisition
 
-Open-ended unlimited lifetime at low prices loses money over time (ongoing Blob storage + sync API costs). Founding tier is OK only with **caps** (500 MB, 2 devices) and a **seat limit**.
+The free plan is intentionally useful but limited — it builds the email list and lets people try before buying.
+
+- Free users cost ~**£0.02/month** each in infra (see [Unit economics](#unit-economics) below).
+- Typical free → paid conversion for a niche utility: **2–10%**.
+- **Newsletter / email list** is a bonus channel (launch promos, feature updates, occasional partners) — **not** the primary revenue model. Product subscriptions carry the business.
+
+### Why £40/year (not £15 or £25)
+
+| Price | Net after Stripe (approx.) | Profit per active user/year (approx.) |
+|-------|---------------------------|---------------------------------------|
+| £15/year | ~£14.26 | ~£12.75 |
+| £20/year (launch) | ~£19.00 | ~£17–18 |
+| £24.99/year | ~£24.00 | ~£22 |
+| **£40/year** | ~£38.50 | **~£37** |
+
+- **£15/year** works per user but leaves little room for free-tier subsidy, support, or future App Store fees.
+- **£24.99/year permanent** reads as “budget utility” and is hard to raise later.
+- **£40/year with £20 launch** gives premium positioning, launch urgency, and ~3× the margin of £15/year at the same infra cost.
+
+### Lifetime / founding (optional)
+
+A separate **£69 one-time founding** tier was considered earlier. If offered:
+
+- Same Pro caps: **500 MB, 2 devices**.
+- **Seat limit** (~200 users), then close.
+- Do **not** offer open-ended unlimited lifetime at low prices — ongoing Blob + sync costs erode margin over time.
+
+### Unit economics
+
+#### User personas
+
+| Persona | Plan | Usage | Your infra cost/month |
+|---------|------|-------|----------------------|
+| **Hannah** | Free | Web only, ~20 MB, manual download | ~£0.02 |
+| **Sofia** | Free | Signed up, barely uses it (~5 MB) | ~£0.002 |
+| **Marcus** | Pro | Mac sync ~8 hrs/day, ~200 MB, 2 devices | ~£0.07 |
+| **Alex** | Pro | Maxed storage (~500 MB), app often open | ~£0.12 |
+
+#### Per paying subscriber (annual)
+
+| | Launch (£20/yr) | Regular (£40/yr) |
+|--|-----------------|------------------|
+| They pay | £20.00 | £40.00 |
+| Stripe (~2.9% + 30p) | ~£0.88 | ~£1.46 |
+| Infra (active Pro user) | ~£0.07–0.12/mo (~£1/yr) | ~£1/yr |
+| **Profit per user/year** | **~£17–18** | **~£37** |
+
+#### Break-even (fixed hosting)
+
+Fixed platform cost at soft launch: ~**£30–35/month** (~£360–420/year) on Vercel Pro + Neon paid tiers.
+
+- At **£20/year** launch (~£18 profit/user): ~**20–24 paying users/year** covers fixed hosting.
+- At **£40/year** (~£37 profit/user): ~**10–12 paying users/year** covers fixed hosting.
+
+Below those counts, stay on free hosting tiers or subsidise until traction.
+
+#### Example launch month (illustrative)
+
+- 300 free (web) → ~£6/mo variable
+- 40 Pro launch (£20/yr) → ~£2.80/mo variable + ~£67/mo revenue (annualised cash)
+- Fixed hosting ~£35/mo
+
+Revenue scales with conversion; free users are cheap list-building if conversion stays above ~5%.
 
 ## Billing stack
 
@@ -132,13 +196,14 @@ Plus: domain ~£10/yr; Apple Developer **£99/yr** if shipping on App Store.
 
 - [ ] Buy `typefolio.app`
 - [ ] RevenueCat project + Stripe connection
-- [ ] Products: Pro monthly, Pro annual, Founding (one-time)
+- [ ] Products: Pro annual (£40), Pro launch (£20, grandfathered), Pro monthly (£4.99)
 - [ ] Webhook: RevenueCat → API → entitlement in DB
 - [ ] Gate `/api/.../manifest` and downloads on `pro` (or free-tier limits)
-- [ ] Pricing + account pages on web
+- [ ] Pricing page: show £40 anchor + £20 launch offer; explain grandfathering
 - [ ] Rebrand UI/copy from syncFont → Typefolio
 - [ ] Mac app: upgrade opens web checkout
 - [ ] iPad App Store: defer or add RevenueCat IAP when shipping
+- [ ] Email capture on free signup (for launch promos and product updates)
 
 ## Repo
 
