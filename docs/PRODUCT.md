@@ -140,6 +140,12 @@ Plus: domain ~£10/yr; Apple Developer **£99/yr** if shipping on App Store.
 - [ ] Mac app: upgrade opens web checkout
 - [ ] iPad App Store: defer or add RevenueCat IAP when shipping
 
+## Repo
+
+- **GitHub org:** [interfaces-technology](https://github.com/interfaces-technology)
+- **Repository:** [interfaces-technology/Typefolio](https://github.com/interfaces-technology/Typefolio)
+- **Primary domain (planned):** `typefolio.app`
+
 ## Related code (current repo)
 
-Rebrand and billing are **not implemented** yet. Existing app name in code is still `syncFont`. Marketplace code on `feat/font-marketplace` is out of scope for v1.
+Rebrand and billing are **not implemented** yet. Existing app name in code is still `syncFont`. Marketplace work is out of scope for v1.
