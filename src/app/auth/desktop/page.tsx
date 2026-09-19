@@ -37,13 +37,13 @@ export default async function DesktopAuthPage({ searchParams }: DesktopAuthPageP
             <CardHeader>
               <CardTitle>Desktop sign-in</CardTitle>
               <CardDescription>
-                This page is opened by the syncFont app. The callback URL is
+                This page is opened by the Typefolio app. The callback URL is
                 missing or invalid.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/" className={cn(buttonVariants({ variant: "outline" }))}>
-                Back to syncFont
+                Back to Typefolio
               </Link>
             </CardContent>
           </Card>
@@ -71,9 +71,9 @@ export default async function DesktopAuthPage({ searchParams }: DesktopAuthPageP
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-4 py-10 sm:px-6">
         <Card>
           <CardHeader>
-            <CardTitle>Sign in to syncFont</CardTitle>
+            <CardTitle>Sign in to Typefolio</CardTitle>
             <CardDescription>
-              Finish signing in here, then you&apos;ll return to the syncFont app
+              Finish signing in here, then you&apos;ll return to the Typefolio app
               automatically.
             </CardDescription>
           </CardHeader>

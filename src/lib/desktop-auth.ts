@@ -1,4 +1,4 @@
-const IOS_CALLBACK_SCHEME = "syncfont:";
+const IOS_CALLBACK_SCHEME = "typefolio:";
 const IOS_CALLBACK_HOST = "auth";
 const IOS_CALLBACK_PATH = "/callback";
 

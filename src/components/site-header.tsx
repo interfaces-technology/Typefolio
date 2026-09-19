@@ -16,7 +16,7 @@ export async function SiteHeader() {
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Type className="size-4" />
           </span>
-          <span>syncFont</span>
+          <span>Typefolio</span>
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
