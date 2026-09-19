@@ -1,28 +1,25 @@
 # Typefolio map
 
-Cloud API + Next.js web client + native SwiftUI apps. Fonts live in Vercel Blob; users and metadata live in Neon.
+Cloud API + Next.js web client + native SwiftUI apps. Neon owns the database, authentication and API compute. Fonts remain in Vercel Blob.
 
-**Product strategy:** see [`docs/PRODUCT.md`](PRODUCT.md) (naming, pricing, billing, launch scope).
+**Product strategy:** see [`docs/PRODUCT.md`](PRODUCT.md).
 
 ## Areas
 
-- **API:** [`src/app/api/`](src/app/api/) — auth, font upload, font download, manifest, devices
-- **Access:** [`src/lib/access.ts`](src/lib/access.ts) — session + bearer token auth
-- **Auth:** [`src/lib/auth/`](src/lib/auth/) — Neon Auth server + client
-- **Storage:** [`src/lib/storage.ts`](src/lib/storage.ts) + [`src/lib/db/`](src/lib/db/) — Postgres + Blob
-- **Web client:** [`src/app/page.tsx`](src/app/page.tsx), [`src/app/library/`](src/app/library/), [`src/app/auth/`](src/app/auth/)
-- **Native apps:** [`apps/SyncFont/`](apps/SyncFont/) — SwiftUI macOS and iPadOS (sync + install)
+- **API:** `functions/api.ts` — Neon Function for font upload/download, manifest, devices and library access
+- **Access:** `functions/auth.ts` — validates Neon Auth sessions/bearer tokens for the Neon API
+- **Auth UI:** `src/lib/auth/` — Neon Auth server + client for the web authentication experience
+- **Data:** `src/lib/db/` — Neon Postgres schema and connection
+- **Storage:** `src/lib/storage.ts` — font binaries remain in Vercel Blob
+- **Web client:** `src/app/`
+- **Native apps:** `apps/SyncFont/` — SwiftUI macOS and iPadOS
 
-## Auth
+## Runtime boundary
 
-- Signed-in user uploads and sees their fonts. Same account on any device.
-- Each user has one collection behind the scenes (`getOrCreateUserLibrary`).
-- Native apps authenticate with email/password, store a bearer token in Keychain, and call `GET /api/me`.
-- There is no public create-library or sync-code sharing.
+The Next.js app remains the frontend host. Its `/api/*` paths are proxied to the Neon Function using `NEON_API_URL`; `/api/auth/*` stays on the Next.js/Neon Auth handler because it serves the browser auth surface.
 
-## Where new things go
+Native clients continue using the Typefolio base URL; they do not need to know the Neon Function URL.
 
-- Pages → `src/app/<path>/page.tsx`
-- API → `src/app/api/<path>/route.ts`
-- Data access → `src/lib/`
-- Native SwiftUI → `apps/SyncFont/Shared/` (shared), `apps/SyncFont/macOS/`, `apps/SyncFont/iOS/`
+## Local development
+
+Leave `NEON_API_URL` unset to use the existing local Next.js API routes. Set it to a deployed Neon Function URL when testing the Neon backend end-to-end.
