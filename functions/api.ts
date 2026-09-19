@@ -252,10 +252,6 @@ async function handle(request: Request): Promise<Response> {
       return upload(request, libraryId);
     }
 
-    if (parts.length === 3 && method === "POST" && new URL(request.url).searchParams.get("reindex") === "1") {
-      return json({ error: "Use /fonts/reindex." }, { status: 400 });
-    }
-
     if (parts.length === 4 && parts[3] === "reindex" && method === "POST") {
       const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
       const rateLimit = checkRateLimit(`reindex-fonts:${ip}`, 10, 60_000);
