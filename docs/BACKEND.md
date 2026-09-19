@@ -35,7 +35,7 @@ Vercel remains the frontend host. It is not the application backend.
 
 ## Deployment
 
-The Neon backend is declared in `neon.ts`. Install the current Neon CLI and config package, link this repository to the Typefolio Neon project, then deploy the function.
+Deploy the `functions/api.ts` entrypoint as a Neon Function using the current Neon CLI. Link the repository to the Typefolio Neon project first, then configure the Function with `DATABASE_URL` and `NEON_AUTH_BASE_URL` from the target branch.
 
 The Neon backend is branch-aware, so production, staging and preview branches can keep database/auth/function state isolated.
 
