@@ -291,7 +291,7 @@ export async function addFontsToLibrary(
     const buffer = Buffer.from(await file.arrayBuffer());
     const metadata = extractFontMetadata(buffer, file.name);
 
-    const blob = await put(pathname, buffer, {
+    const blob = await put(pathname, new Uint8Array(buffer), {
       access: "private",
       addRandomSuffix: false,
       contentType: "application/octet-stream",
