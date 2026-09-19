@@ -144,7 +144,7 @@ async function downloadLibrary(libraryId: string): Promise<Response> {
   return new Response(zipBuffer, {
     headers: {
       "Content-Type": "application/zip",
-      "Content-Disposition: `attachment; filename="${safeName || "fonts"}.zip"`,
+      "Content-Disposition": `attachment; filename="${safeName || "fonts"}.zip"`,
       "Content-Length": String(zipBuffer.length),
     },
   });
