@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "syncFont — Your fonts, on every device",
+  title: "Typefolio — Your fonts, on every device",
   description:
     "Upload font files once. Sign in with the same account on any device to see them.",
 };

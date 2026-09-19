@@ -1,0 +1,51 @@
+{
+  "name": "typefolio-desktop",
+  "version": "0.1.0",
+  "description": "Typefolio — Your fonts, on every device",
+  "main": "dist/main.js",
+  "private": true,
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "dist": "tsc && electron-builder",
+    "dist:mac": "tsc && electron-builder --mac",
+    "dist:win": "tsc && electron-builder --win"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "playwright-core": "^1.63.0",
+    "typescript": "^5"
+  },
+  "build": {
+    "appId": "company.theinterfaces.typefolio",
+    "productName": "Typefolio",
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "protocols": [
+      {
+        "name": "Typefolio",
+        "schemes": [
+          "typefolio"
+        ]
+      }
+    ]
+  }
+}

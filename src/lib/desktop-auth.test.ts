@@ -12,15 +12,15 @@ describe("isAllowedDesktopRedirectUri", () => {
     assert.equal(isAllowedDesktopRedirectUri("http://localhost:8080/callback"), true);
   });
 
-  it("allows iOS syncfont callbacks", () => {
-    assert.equal(isAllowedDesktopRedirectUri("syncfont://auth/callback"), true);
+  it("allows Typefolio deep-link callbacks", () => {
+    assert.equal(isAllowedDesktopRedirectUri("typefolio://auth/callback"), true);
   });
 
   it("rejects unsafe redirects", () => {
     assert.equal(isAllowedDesktopRedirectUri(""), false);
     assert.equal(isAllowedDesktopRedirectUri("https://evil.com/callback"), false);
-    assert.equal(isAllowedDesktopRedirectUri("syncfont://evil/callback"), false);
-    assert.equal(isAllowedDesktopRedirectUri("syncfont://auth/other"), false);
+    assert.equal(isAllowedDesktopRedirectUri("typefolio://evil/callback"), false);
+    assert.equal(isAllowedDesktopRedirectUri("typefolio://auth/other"), false);
     assert.equal(isAllowedDesktopRedirectUri("http://example.com/callback"), false);
   });
 });
@@ -28,10 +28,10 @@ describe("isAllowedDesktopRedirectUri", () => {
 describe("buildDesktopCallbackUrl", () => {
   it("appends token and email query params", () => {
     const url = buildDesktopCallbackUrl(
-      "syncfont://auth/callback",
+      "typefolio://auth/callback",
       "token-123",
       "user@example.com",
     );
-    assert.equal(url, "syncfont://auth/callback?token=token-123&email=user%40example.com");
+    assert.equal(url, "typefolio://auth/callback?token=token-123&email=user%40example.com");
   });
 });
