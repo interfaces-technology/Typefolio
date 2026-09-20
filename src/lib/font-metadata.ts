@@ -1,7 +1,7 @@
 import * as fontkit from "fontkit";
 
 import { getFontExtension } from "@/lib/font-validation";
-import type { FontMetadata } from "@/lib/types";
+import type { FontMetadata, VariableAxis } from "@/lib/types";
 
 const UNKNOWN_FAMILY = "Unknown";
 
@@ -61,6 +61,26 @@ function buildStyleName(
   return italic ? "Italic" : undefined;
 }
 
+function extractAxes(font: fontkit.Font): VariableAxis[] | undefined {
+  const raw =
+    (font as unknown as {
+      variationAxes?: Record<
+        string,
+        { name?: string; min: number; default: number; max: number }
+      >;
+    }).variationAxes ?? {};
+
+  const axes = Object.entries(raw).map(([tag, axis]) => ({
+    tag,
+    name: axis.name,
+    min: axis.min,
+    defaultValue: axis.default,
+    max: axis.max,
+  }));
+
+  return axes.length > 0 ? axes : undefined;
+}
+
 function extractFromFontkit(buffer: Buffer): FontMetadata | null {
   try {
     const font = fontkit.create(buffer);
@@ -84,12 +104,15 @@ function extractFromFontkit(buffer: Buffer): FontMetadata | null {
         ? font.weight
         : undefined;
     const postscriptName = normalizeName(font.postscriptName);
+    const variableAxes = extractAxes(font);
 
     return {
       familyName,
       styleName,
       weight,
+      italic: font.italic === true,
       postscriptName,
+      ...(variableAxes ? { variableAxes } : {}),
     };
   } catch {
     return null;

@@ -2,11 +2,21 @@ export const FONT_EXTENSIONS = [".ttf", ".otf", ".woff", ".woff2"] as const;
 
 export type FontExtension = (typeof FONT_EXTENSIONS)[number];
 
+export interface VariableAxis {
+  tag: string;
+  name?: string;
+  min: number;
+  defaultValue: number;
+  max: number;
+}
+
 export interface FontMetadata {
   familyName: string;
   styleName?: string;
   weight?: number;
+  italic?: boolean;
   postscriptName?: string;
+  variableAxes?: VariableAxis[];
 }
 
 export interface FontFile extends FontMetadata {

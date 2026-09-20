@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 
 import { getLibraryById } from "@/lib/storage";
-import type { FontFile } from "@/lib/types";
+import type { FontFile, VariableAxis } from "@/lib/types";
 
 export interface FontManifestEntry {
   id: string;
@@ -12,7 +12,9 @@ export interface FontManifestEntry {
   familyName: string;
   styleName?: string;
   weight?: number;
+  italic?: boolean;
   postscriptName?: string;
+  variableAxes?: VariableAxis[];
   uploadedAt: string;
 }
 
@@ -48,7 +50,9 @@ export async function getLibraryManifest(
     familyName: font.familyName,
     styleName: font.styleName,
     weight: font.weight,
+    italic: font.italic,
     postscriptName: font.postscriptName,
+    variableAxes: font.variableAxes,
     uploadedAt: font.uploadedAt,
   }));
 

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { Columns2 } from "lucide-react";
 
+import { FamilyTiles } from "@/components/family-tiles";
 import { FontList } from "@/components/font-list";
 import { UploadZone } from "@/components/upload-zone";
 import { buttonVariants } from "@/components/ui/button";
@@ -13,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { groupFontsByFamily } from "@/lib/font-families";
 import type { Library } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +25,7 @@ interface SignedInHomeProps {
 
 export function SignedInHome({ library: initialLibrary }: SignedInHomeProps) {
   const [library, setLibrary] = useState(initialLibrary);
+  const families = useMemo(() => groupFontsByFamily(library.fonts), [library.fonts]);
 
   return (
     <div className="space-y-8">
@@ -30,8 +34,24 @@ export function SignedInHome({ library: initialLibrary }: SignedInHomeProps) {
         <UploadZone onUploaded={setLibrary} />
       </section>
 
+      {families.length > 0 ? (
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-medium">Font families</h2>
+            <Link
+              href={`/library/${library.id}/specimen`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            >
+              <Columns2 className="size-4" />
+              Specimen studio
+            </Link>
+          </div>
+          <FamilyTiles libraryId={library.id} families={families} />
+        </section>
+      ) : null}
+
       <section className="space-y-3">
-        <h2 className="text-lg font-medium">Your fonts</h2>
+        <h2 className="text-lg font-medium">All fonts</h2>
         <FontList
           libraryId={library.id}
           fonts={library.fonts}
