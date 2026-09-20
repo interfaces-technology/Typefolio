@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   integer,
   jsonb,
@@ -7,6 +8,8 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+
+import type { VariableAxis } from "@/lib/types";
 
 const timestamptz = (name: string) =>
   timestamp(name, { withTimezone: true, mode: "string" });
@@ -45,7 +48,9 @@ export const fonts = pgTable(
     familyName: text("family_name"),
     styleName: text("style_name"),
     weight: integer("weight"),
+    italic: boolean("italic"),
     postscriptName: text("postscript_name"),
+    variableAxes: jsonb("variable_axes").$type<VariableAxis[]>(),
     uploadedAt: timestamptz("uploaded_at").notNull(),
   },
   (table) => [
@@ -84,3 +89,55 @@ export const devices = pgTable(
 export type LibraryRow = typeof libraries.$inferSelect;
 export type FontRow = typeof fonts.$inferSelect;
 export type DeviceRow = typeof devices.$inferSelect;
+
+export const desktopAuthCodes = pgTable(
+  "desktop_auth_codes",
+  {
+    id: text("id").primaryKey(),
+    code: text("code").notNull(),
+    state: text("state").notNull(),
+    sessionToken: text("session_token").notNull(),
+    userId: text("user_id").notNull(),
+    redirectUri: text("redirect_uri").notNull(),
+    email: text("email").notNull(),
+    createdIp: text("created_ip"),
+    expiresAt: timestamptz("expires_at").notNull(),
+    usedAt: timestamptz("used_at"),
+    createdAt: timestamptz("created_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("desktop_auth_codes_code_idx").on(table.code),
+    index("desktop_auth_codes_expires_at_idx").on(table.expiresAt),
+    index("desktop_auth_codes_state_idx").on(table.state),
+  ],
+);
+
+export const desktopAuthEvents = pgTable(
+  "desktop_auth_events",
+  {
+    id: text("id").primaryKey(),
+    eventType: text("event_type").notNull(),
+    outcome: text("outcome").notNull(),
+    userId: text("user_id"),
+    redirectUri: text("redirect_uri"),
+    clientIp: text("client_ip"),
+    reason: text("reason"),
+    createdAt: timestamptz("created_at").notNull(),
+  },
+  (table) => [
+    index("desktop_auth_events_event_type_idx").on(table.eventType),
+    index("desktop_auth_events_client_ip_created_at_idx").on(
+      table.clientIp,
+      table.createdAt,
+    ),
+    index("desktop_auth_events_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export const userProfiles = pgTable("user_profiles", {
+  userId: text("user_id").primaryKey(),
+  onboardingCompleted: boolean("onboarding_completed")
+    .notNull()
+    .default(false),
+  updatedAt: timestamptz("updated_at").notNull(),
+});

@@ -41,7 +41,9 @@ function toFontFile(row: typeof fonts.$inferSelect): FontFile {
     familyName: row.familyName ?? "Unknown",
     styleName: row.styleName ?? undefined,
     weight: row.weight ?? undefined,
+    italic: row.italic ?? undefined,
     postscriptName: row.postscriptName ?? undefined,
+    variableAxes: row.variableAxes ?? undefined,
     uploadedAt: row.uploadedAt,
   };
 }
@@ -310,7 +312,9 @@ export async function addFontsToLibrary(
       familyName: metadata.familyName,
       styleName: metadata.styleName ?? null,
       weight: metadata.weight ?? null,
+      italic: metadata.italic ?? null,
       postscriptName: metadata.postscriptName ?? null,
+      variableAxes: metadata.variableAxes ?? null,
       uploadedAt: new Date().toISOString(),
     };
 
@@ -510,7 +514,9 @@ export async function reindexLibraryFontMetadata(
         familyName: metadata.familyName,
         styleName: metadata.styleName ?? null,
         weight: metadata.weight ?? null,
+        italic: metadata.italic ?? null,
         postscriptName: metadata.postscriptName ?? null,
+        variableAxes: metadata.variableAxes ?? null,
       })
       .where(and(eq(fonts.libraryId, libraryId), eq(fonts.id, fontRow.id)));
 
