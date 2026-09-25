@@ -137,6 +137,33 @@ export async function updateDevice(
   return updated ? { device: toDevice(updated) } : null;
 }
 
+export async function deleteDevice(
+  libraryId: string,
+  deviceId: string,
+): Promise<{ fontsToRemove: string[] } | null> {
+  const library = await getLibraryById(libraryId);
+  if (!library) {
+    return null;
+  }
+
+  const db = getDb();
+  const [existing] = await db
+    .select()
+    .from(devices)
+    .where(and(eq(devices.libraryId, libraryId), eq(devices.id, deviceId)))
+    .limit(1);
+
+  if (!existing) {
+    return null;
+  }
+
+  const fontsToRemove = [...existing.installedFontIds];
+  await db.delete(devices).where(eq(devices.id, deviceId));
+  await touchLibrary(libraryId);
+
+  return { fontsToRemove };
+}
+
 export async function listDevices(libraryId: string): Promise<Device[]> {
   const db = getDb();
   const rows = await db

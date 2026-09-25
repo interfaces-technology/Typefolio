@@ -1,5 +1,11 @@
+import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
+
 import { auth } from "@/lib/auth/server";
+import { getSessionCookieName } from "@/lib/auth/config";
 import { getUserEntitlement } from "@/lib/entitlements";
+import { getDb } from "@/lib/db";
+import { authUser } from "@/lib/db/schema-auth";
 import { getLibraryById } from "@/lib/storage";
 import type { Entitlement } from "@/lib/types";
 
@@ -7,6 +13,7 @@ export type AccessOk = {
   ok: true;
   userId: string;
   via: "session" | "bearer";
+  emailVerified: boolean;
 };
 
 export type AccessErr = {
@@ -27,86 +34,89 @@ function readBearerToken(request: Request): string | null {
   return token || null;
 }
 
-async function getUserIdFromBearerToken(
-  token: string,
-  request: Request,
-): Promise<string | null> {
-  const sessionCookieName = "__Secure-neon-auth.session_token";
-  const cookieValue = `${sessionCookieName}=${token}`;
-
-  const origin = new URL(request.url).origin;
-  const localSessionUrl = new URL("/api/auth/get-session", origin);
-
-  try {
-    const localResponse = await fetch(localSessionUrl, {
-      headers: { Cookie: cookieValue },
-    });
-    if (localResponse.ok) {
-      const data = (await localResponse.json()) as {
-        user?: { id?: string };
-        session?: { userId?: string };
-      };
-      const userId = data.user?.id ?? data.session?.userId ?? null;
-      if (userId) {
-        return userId;
-      }
+function sessionHeaders(request?: Request): Headers {
+  if (request) {
+    const bearer = readBearerToken(request);
+    if (bearer) {
+      const cookieName = getSessionCookieName();
+      const headersInit = new Headers(request.headers);
+      headersInit.set("cookie", `${cookieName}=${bearer}`);
+      return headersInit;
     }
-  } catch {
-    // Fall back to upstream Neon Auth.
+    return new Headers(request.headers);
   }
 
-  const baseUrl = process.env.NEON_AUTH_BASE_URL?.trim().replace(/^['"]|['"]$/g, "");
-  if (!baseUrl) {
-    return null;
-  }
+  return new Headers();
+}
 
-  const url = new URL("get-session", baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`);
-
-  try {
-    const response = await fetch(url, {
-      headers: { Cookie: cookieValue },
-    });
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = (await response.json()) as {
-      user?: { id?: string };
-      session?: { userId?: string };
-    };
-
-    return data.user?.id ?? data.session?.userId ?? null;
-  } catch {
-    return null;
-  }
+async function resolveSession(request?: Request) {
+  const headerList = request ? sessionHeaders(request) : await headers();
+  return auth.api.getSession({ headers: headerList });
 }
 
 export async function getSessionUserId(request?: Request): Promise<string | null> {
-  const { data: session } = await auth.getSession();
-  if (session?.user?.id) {
-    return session.user.id;
-  }
+  const session = await resolveSession(request);
+  return session?.user?.id ?? null;
+}
 
-  if (!request) {
+export async function getSessionUser(
+  request?: Request,
+): Promise<{ id: string; emailVerified: boolean } | null> {
+  const session = await resolveSession(request);
+  if (!session?.user?.id) {
     return null;
   }
 
-  const bearer = readBearerToken(request);
-  if (!bearer) {
-    return null;
-  }
-
-  return getUserIdFromBearerToken(bearer, request);
+  return {
+    id: session.user.id,
+    emailVerified: Boolean(session.user.emailVerified),
+  };
 }
 
 export async function requireSession(request?: Request): Promise<AccessOk | AccessErr> {
-  const userId = await getSessionUserId(request);
-  if (!userId) {
+  const user = await getSessionUser(request);
+  if (!user) {
     return { ok: false, status: 401, error: "Sign in required." };
   }
 
   const via = request && readBearerToken(request) ? "bearer" : "session";
-  return { ok: true, userId, via };
+  return {
+    ok: true,
+    userId: user.id,
+    via,
+    emailVerified: user.emailVerified,
+  };
+}
+
+export async function requireVerifiedEmail(
+  request?: Request,
+): Promise<AccessOk | AccessErr> {
+  const session = await requireSession(request);
+  if (!session.ok) {
+    return session;
+  }
+
+  if (!session.emailVerified) {
+    return {
+      ok: false,
+      status: 403,
+      error: "Verify your email before uploading fonts.",
+      code: "EMAIL_NOT_VERIFIED",
+    };
+  }
+
+  return session;
+}
+
+export async function isUserEmailVerified(userId: string): Promise<boolean> {
+  const db = getDb();
+  const [row] = await db
+    .select({ emailVerified: authUser.emailVerified })
+    .from(authUser)
+    .where(eq(authUser.id, userId))
+    .limit(1);
+
+  return row?.emailVerified ?? false;
 }
 
 export async function requireLibraryOwner(

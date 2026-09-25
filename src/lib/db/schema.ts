@@ -160,6 +160,14 @@ export const subscriptions = pgTable(
     appleProductId: text("apple_product_id"),
     appleExpiresAt: timestamptz("apple_expires_at"),
     appleStatus: text("apple_status"),
+    polarCustomerId: text("polar_customer_id"),
+    polarSubscriptionId: text("polar_subscription_id"),
+    polarStatus: text("polar_status"),
+    polarCurrentPeriodEnd: timestamptz("polar_current_period_end"),
+    polarProductId: text("polar_product_id"),
+    polarIsLaunchPricing: boolean("polar_is_launch_pricing")
+      .notNull()
+      .default(false),
     isLaunchPricing: boolean("is_launch_pricing").notNull().default(false),
     currentPeriodEnd: timestamptz("current_period_end"),
     storageLimitBytes: integer("storage_limit_bytes")
@@ -170,11 +178,20 @@ export const subscriptions = pgTable(
   },
   (table) => [
     index("subscriptions_stripe_customer_id_idx").on(table.stripeCustomerId),
+    index("subscriptions_polar_customer_id_idx").on(table.polarCustomerId),
     uniqueIndex("subscriptions_apple_original_transaction_id_idx").on(
       table.appleOriginalTransactionId,
     ),
   ],
 );
+
+export {
+  authAccount,
+  authPasskey,
+  authSession,
+  authUser,
+  authVerification,
+} from "@/lib/db/schema-auth";
 
 export const billingEvents = pgTable(
   "billing_events",

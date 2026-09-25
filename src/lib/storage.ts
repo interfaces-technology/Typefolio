@@ -1,10 +1,12 @@
 import { createHash } from "crypto";
+import path from "path";
 import { del, get, put } from "@vercel/blob";
 import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { getDb } from "@/lib/db";
 import { devices, fonts, libraries } from "@/lib/db/schema";
+import { getUserEntitlement } from "@/lib/entitlements";
 import { groupFontsByFamily } from "@/lib/font-families";
 import { extractFontMetadata } from "@/lib/font-metadata";
 import { getFontExtension, isAllowedFontFile } from "@/lib/font-validation";
@@ -265,7 +267,13 @@ export async function deleteLibrary(libraryId: string): Promise<boolean> {
 export async function addFontsToLibrary(
   libraryId: string,
   files: File[],
-): Promise<{ library: Library; added: FontFile[]; rejected: string[] }> {
+): Promise<{
+  library: Library;
+  added: FontFile[];
+  updated: FontFile[];
+  skipped: string[];
+  rejected: string[];
+}> {
   const library = await loadLibrary(libraryId);
   if (!library) {
     throw new Error("Library not found");
@@ -273,6 +281,8 @@ export async function addFontsToLibrary(
 
   const db = getDb();
   const added: FontFile[] = [];
+  const updated: FontFile[] = [];
+  const skipped: string[] = [];
   const rejected: string[] = [];
 
   for (const file of files) {
@@ -287,11 +297,84 @@ export async function addFontsToLibrary(
       continue;
     }
 
+    const originalName = path.basename(file.name);
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const sha256 = sha256Hex(buffer);
+
+    const [existing] = await db
+      .select()
+      .from(fonts)
+      .where(
+        and(eq(fonts.libraryId, libraryId), eq(fonts.originalName, originalName)),
+      )
+      .limit(1);
+
+    if (existing && existing.sha256 === sha256) {
+      skipped.push(originalName);
+      continue;
+    }
+
+    const storageDelta = existing ? file.size - existing.size : file.size;
+    const entitlement = await getUserEntitlement(library.ownerUserId);
+    if (
+      entitlement.storageUsedBytes + storageDelta >
+      entitlement.storageLimitBytes
+    ) {
+      rejected.push(`${originalName} (storage limit exceeded)`);
+      continue;
+    }
+
+    const metadata = extractFontMetadata(buffer, file.name);
+    const now = new Date().toISOString();
+
+    if (existing) {
+      await del([existing.blobUrl, existing.blobPathname]);
+
+      const blob = await put(existing.blobPathname, buffer, {
+        access: "private",
+        addRandomSuffix: false,
+        contentType: "application/octet-stream",
+      });
+
+      await db
+        .update(fonts)
+        .set({
+          sha256,
+          size: file.size,
+          blobUrl: blob.url,
+          blobPathname: blob.pathname,
+          familyName: metadata.familyName,
+          styleName: metadata.styleName ?? null,
+          weight: metadata.weight ?? null,
+          italic: metadata.italic ?? null,
+          postscriptName: metadata.postscriptName ?? null,
+          variableAxes: metadata.variableAxes ?? null,
+          uploadedAt: now,
+        })
+        .where(eq(fonts.id, existing.id));
+
+      updated.push(
+        toFontFile({
+          ...existing,
+          sha256,
+          size: file.size,
+          blobUrl: blob.url,
+          blobPathname: blob.pathname,
+          familyName: metadata.familyName,
+          styleName: metadata.styleName ?? null,
+          weight: metadata.weight ?? null,
+          italic: metadata.italic ?? null,
+          postscriptName: metadata.postscriptName ?? null,
+          variableAxes: metadata.variableAxes ?? null,
+          uploadedAt: now,
+        }),
+      );
+      continue;
+    }
+
     const fontId = nanoid(10);
     const storedName = `${fontId}${extension}`;
     const pathname = fontPathname(libraryId, storedName);
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const metadata = extractFontMetadata(buffer, file.name);
 
     const blob = await put(pathname, buffer, {
       access: "private",
@@ -302,11 +385,11 @@ export async function addFontsToLibrary(
     const fontRow = {
       id: fontId,
       libraryId,
-      originalName: file.name,
+      originalName,
       storedName,
       blobUrl: blob.url,
       blobPathname: blob.pathname,
-      sha256: sha256Hex(buffer),
+      sha256,
       size: file.size,
       extension,
       familyName: metadata.familyName,
@@ -315,24 +398,26 @@ export async function addFontsToLibrary(
       italic: metadata.italic ?? null,
       postscriptName: metadata.postscriptName ?? null,
       variableAxes: metadata.variableAxes ?? null,
-      uploadedAt: new Date().toISOString(),
+      uploadedAt: now,
     };
 
     await db.insert(fonts).values(fontRow);
     added.push(toFontFile(fontRow));
   }
 
-  await db
-    .update(libraries)
-    .set({ updatedAt: new Date().toISOString() })
-    .where(eq(libraries.id, libraryId));
+  if (added.length > 0 || updated.length > 0) {
+    await db
+      .update(libraries)
+      .set({ updatedAt: new Date().toISOString() })
+      .where(eq(libraries.id, libraryId));
+  }
 
-  const updated = await loadLibrary(libraryId);
-  if (!updated) {
+  const refreshed = await loadLibrary(libraryId);
+  if (!refreshed) {
     throw new Error("Library not found");
   }
 
-  return { library: updated, added, rejected };
+  return { library: refreshed, added, updated, skipped, rejected };
 }
 
 export async function deleteFont(
@@ -398,29 +483,6 @@ export async function getFontBuffer(
   }
 
   return { buffer, font: toFontFile(font) };
-}
-
-export async function getAllFontBuffers(
-  libraryId: string,
-): Promise<Array<{ buffer: Buffer; font: FontFile }>> {
-  const db = getDb();
-  const fontRows = await db
-    .select()
-    .from(fonts)
-    .where(eq(fonts.libraryId, libraryId));
-
-  const results: Array<{ buffer: Buffer; font: FontFile }> = [];
-
-  for (const font of fontRows) {
-    const buffer =
-      (await bufferFromBlob(font.blobPathname)) ??
-      (await bufferFromBlob(font.blobUrl));
-    if (buffer) {
-      results.push({ buffer, font: toFontFile(font) });
-    }
-  }
-
-  return results;
 }
 
 export async function touchLibrary(libraryId: string): Promise<void> {

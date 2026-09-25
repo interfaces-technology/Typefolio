@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 
 import { requireSession } from "@/lib/access";
 import { auth } from "@/lib/auth/server";
 import { isCheckoutPriceId } from "@/lib/billing/plans";
-import { createCheckoutSession } from "@/lib/billing/stripe";
+import { createCheckoutSession } from "@/lib/billing/polar";
 
 export async function POST(request: Request) {
   const session = await requireSession(request);
@@ -25,14 +26,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: authSession } = await auth.getSession();
+  const authSession = await auth.api.getSession({ headers: await headers() });
   const email = authSession?.user?.email ?? null;
+  const customerIpAddress =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
 
   try {
     const result = await createCheckoutSession({
       userId: session.userId,
       email,
       priceId: body.priceId,
+      customerIpAddress,
     });
 
     if (!result) {

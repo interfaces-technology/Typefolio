@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -11,8 +11,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { cn } from "cn";
+import { cn } from "@/lib/utils";
 import { auth } from "@/lib/auth/server";
+import { getSessionCookieName } from "@/lib/auth/config";
 import {
   buildDesktopCallbackUrl,
   isAllowedDesktopRedirectUri,
@@ -24,7 +25,7 @@ interface DesktopAuthPageProps {
   searchParams: Promise<{ redirect_uri?: string }>;
 }
 
-const SESSION_COOKIE_NAME = "__Secure-neon-auth.session_token";
+const SESSION_COOKIE_NAME = getSessionCookieName();
 
 export default async function DesktopAuthPage({ searchParams }: DesktopAuthPageProps) {
   const { redirect_uri: redirectUri } = await searchParams;
@@ -52,7 +53,7 @@ export default async function DesktopAuthPage({ searchParams }: DesktopAuthPageP
     );
   }
 
-  const { data: session } = await auth.getSession();
+  const session = await auth.api.getSession({ headers: await headers() });
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 

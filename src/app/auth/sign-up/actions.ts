@@ -1,7 +1,10 @@
 "use server";
 
-import { auth } from "@/lib/auth/server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { isAPIError } from "better-auth/api";
+
+import { auth } from "@/lib/auth/server";
 
 export async function signUpWithEmail(
   _prevState: { error: string } | null,
@@ -15,15 +18,21 @@ export async function signUpWithEmail(
     return { error: "Name, email, and password are required." };
   }
 
-  const { error } = await auth.signUp.email({
-    email: email.trim(),
-    name: name.trim(),
-    password,
-  });
-
-  if (error) {
-    return { error: error.message || "Could not create account." };
+  try {
+    await auth.api.signUpEmail({
+      body: {
+        email: email.trim(),
+        name: name.trim(),
+        password,
+      },
+      headers: await headers(),
+    });
+  } catch (error) {
+    if (isAPIError(error)) {
+      return { error: error.message || "Could not create account." };
+    }
+    throw error;
   }
 
-  redirect("/");
+  redirect("/auth/sign-in?verify=1");
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireLibraryOwner } from "@/lib/access";
-import { updateDevice } from "@/lib/devices";
+import { deleteDevice, updateDevice } from "@/lib/devices";
 
 interface RouteContext {
   params: Promise<{ id: string; deviceId: string }>;
@@ -48,4 +48,23 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   return NextResponse.json(result);
+}
+
+export async function DELETE(request: Request, context: RouteContext) {
+  const { id, deviceId } = await context.params;
+  const access = await requireLibraryOwner(id, request);
+
+  if (!access.ok) {
+    return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
+  const result = await deleteDevice(id, deviceId);
+  if (!result) {
+    return NextResponse.json({ error: "Device not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    removed: true,
+    fontsToRemove: result.fontsToRemove,
+  });
 }

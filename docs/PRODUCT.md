@@ -13,9 +13,14 @@ Decisions from product strategy planning (Sep 2026). This doc is the source of t
 
 | Domain | Status | Notes |
 |--------|--------|-------|
-| `typefolio.app` | Available (~$9.99/yr on Vercel) | **Primary** |
+| `typefolio.app` | Available (~$9.99/yr on Vercel) | **Marketing** site (landing, pricing, legal) |
+| `app.typefolio.app` | Subdomain on same zone | **Product** (auth, library, billing UI) |
+| `api.typefolio.app` | Subdomain on same zone | **API** + webhooks + native clients |
+| `admin.typefolio.app` | Subdomain (later) | Founder console |
 | `typefolio.com` | Taken | — |
-| `gettypefolio.com` | Available (~$11.25/yr) | Optional marketing redirect |
+| `gettypefolio.com` | Available (~$11.25/yr) | Optional redirect → `typefolio.app` |
+
+Deployment split and env matrix: [`docs/DEPLOYMENT.md`](DEPLOYMENT.md).
 
 Names considered and not chosen: Inkwell (strong brand, but bare domains taken), syncFont (too narrow for a real product brand).
 

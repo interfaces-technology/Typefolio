@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { Type } from "lucide-react";
 
 import { SignOutButton } from "@/components/sign-out-button";
@@ -7,7 +8,7 @@ import { auth } from "@/lib/auth/server";
 import { cn } from "@/lib/utils";
 
 export async function SiteHeader() {
-  const { data: session } = await auth.getSession();
+  const session = await auth.api.getSession({ headers: await headers() });
 
   return (
     <header className="border-b bg-card/80 backdrop-blur-sm">

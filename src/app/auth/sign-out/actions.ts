@@ -1,9 +1,11 @@
 "use server";
 
-import { auth } from "@/lib/auth/server";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { auth } from "@/lib/auth/server";
+
 export async function signOut() {
-  await auth.signOut();
+  await auth.api.signOut({ headers: await headers() });
   redirect("/");
 }

@@ -7,11 +7,11 @@ import {
 } from "@/lib/entitlements";
 import type { CheckoutPriceId } from "@/lib/types";
 
-export function resolveStripePriceId(priceId: CheckoutPriceId): string | null {
+export function resolvePolarProductId(priceId: CheckoutPriceId): string | null {
   const envMap: Record<CheckoutPriceId, string | undefined> = {
-    pro_annual: process.env.STRIPE_PRICE_ANNUAL,
-    pro_launch: process.env.STRIPE_PRICE_LAUNCH,
-    pro_monthly: process.env.STRIPE_PRICE_MONTHLY,
+    pro_annual: process.env.POLAR_PRODUCT_ANNUAL,
+    pro_launch: process.env.POLAR_PRODUCT_LAUNCH,
+    pro_monthly: process.env.POLAR_PRODUCT_MONTHLY,
   };
 
   const value = envMap[priceId]?.trim().replace(/^['"]|['"]$/g, "");
@@ -51,7 +51,7 @@ export function getPublicBillingPlans(): {
         interval: null,
         storageLimitBytes: FREE_STORAGE_LIMIT_BYTES,
         deviceLimit: FREE_DEVICE_LIMIT,
-        features: ["Upload fonts", "Manual download", "1 device"],
+        features: ["Upload fonts", "Web library", "1 device"],
         highlight: false,
       },
       {

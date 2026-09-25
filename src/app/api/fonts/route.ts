@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 
-import { checkStorageCapacity, requireSession } from "@/lib/access";
+import { requireSession, requireVerifiedEmail } from "@/lib/access";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { addFontsToLibrary, getOrCreateUserLibrary } from "@/lib/storage";
 
 export async function POST(request: Request) {
-  const session = await requireSession(request);
+  const session = await requireVerifiedEmail(request);
   if (!session.ok) {
-    return NextResponse.json({ error: session.error }, { status: session.status });
+    return NextResponse.json(
+      { error: session.error, code: session.code },
+      { status: session.status },
+    );
   }
 
   const ip =
@@ -36,13 +39,6 @@ export async function POST(request: Request) {
     );
   }
 
-  if (files.length > 20) {
-    return NextResponse.json(
-      { error: "You can upload up to 20 font files at once." },
-      { status: 400 },
-    );
-  }
-
   const maxFileSize = 15 * 1024 * 1024;
   const oversized = files.find((file) => file.size > maxFileSize);
   if (oversized) {
@@ -52,22 +48,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const library = await getOrCreateUserLibrary(session.userId!);
-
-  const totalUploadBytes = files.reduce((sum, file) => sum + file.size, 0);
-  const storageAccess = await checkStorageCapacity(session.userId, totalUploadBytes);
-  if (!storageAccess.ok) {
-    return NextResponse.json(
-      { error: storageAccess.error, code: storageAccess.code },
-      { status: storageAccess.status },
-    );
-  }
+  const library = await getOrCreateUserLibrary(session.userId);
 
   try {
     const result = await addFontsToLibrary(library.id, files);
     return NextResponse.json({
       library: result.library,
       added: result.added.length,
+      updated: result.updated.length,
+      skipped: result.skipped.length,
       rejected: result.rejected,
     });
   } catch {

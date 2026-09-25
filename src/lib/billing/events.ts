@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { getDb } from "@/lib/db";
 import { billingEvents } from "@/lib/db/schema";
 
-export type BillingProvider = "stripe" | "apple";
+export type BillingProvider = "polar" | "apple";
 
 export type BillingEventOutcome = "applied" | "ignored" | "failed";
 

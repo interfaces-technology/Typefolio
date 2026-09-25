@@ -4,6 +4,8 @@ Cloud API + Next.js web client + native SwiftUI apps. Fonts live in Vercel Blob;
 
 **Product strategy:** see [`docs/PRODUCT.md`](PRODUCT.md) (naming, pricing, billing, launch scope).
 
+**Deploy split (marketing / app / api):** see [`docs/DEPLOYMENT.md`](DEPLOYMENT.md).
+
 ## Areas
 
 - **API:** [`src/app/api/`](src/app/api/) — auth, font upload, font download, manifest, devices

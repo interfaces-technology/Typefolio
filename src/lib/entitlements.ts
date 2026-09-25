@@ -19,14 +19,14 @@ export function planLimits(plan: PlanId): {
     return {
       storageLimitBytes: PRO_STORAGE_LIMIT_BYTES,
       deviceLimit: PRO_DEVICE_LIMIT,
-      features: { sync: true, zipDownload: true, compare: true },
+      features: { sync: true, zipDownload: false, compare: true },
     };
   }
 
   return {
     storageLimitBytes: FREE_STORAGE_LIMIT_BYTES,
     deviceLimit: FREE_DEVICE_LIMIT,
-    features: { sync: false, zipDownload: true, compare: true },
+    features: { sync: false, zipDownload: false, compare: true },
   };
 }
 
@@ -45,18 +45,18 @@ export function isLaunchPricingFromCheckoutPriceId(
   return checkoutPriceId === "pro_launch";
 }
 
-export function isLaunchPricingFromStripePriceId(
-  stripePriceId: string | null | undefined,
+export function isLaunchPricingFromPolarProductId(
+  polarProductId: string | null | undefined,
 ): boolean {
-  if (!stripePriceId) {
+  if (!polarProductId) {
     return false;
   }
 
-  const launchPriceId = process.env.STRIPE_PRICE_LAUNCH?.trim();
-  return Boolean(launchPriceId && stripePriceId === launchPriceId);
+  const launchProductId = process.env.POLAR_PRODUCT_LAUNCH?.trim();
+  return Boolean(launchProductId && polarProductId === launchProductId);
 }
 
-export function isProStripeStatus(
+export function isProPolarStatus(
   status: string | null | undefined,
   periodEnd: string | null | undefined,
 ): boolean {
@@ -64,11 +64,19 @@ export function isProStripeStatus(
     return false;
   }
 
-  if (status === "active" || status === "trialing" || status === "past_due") {
+  const normalized = status.toLowerCase();
+  if (
+    normalized === "active" ||
+    normalized === "trialing" ||
+    normalized === "past_due"
+  ) {
     return true;
   }
 
-  if (status === "canceled" && periodEnd) {
+  if (
+    (normalized === "canceled" || normalized === "cancelled") &&
+    periodEnd
+  ) {
     return new Date(periodEnd).getTime() > Date.now();
   }
 
@@ -102,19 +110,19 @@ export function effectiveProFromSubscriptionRow(
     return { isPro: false, status: "active", isLaunchPricing: false };
   }
 
-  const stripeActive = isProStripeStatus(
-    row.stripeStatus,
-    row.stripeCurrentPeriodEnd,
+  const polarActive = isProPolarStatus(
+    row.polarStatus,
+    row.polarCurrentPeriodEnd,
   );
   const appleActive = isProAppleStatus(row.appleStatus, row.appleExpiresAt);
 
-  if (!stripeActive && !appleActive) {
+  if (!polarActive && !appleActive) {
     return { isPro: false, status: "active", isLaunchPricing: false };
   }
 
   const ends: string[] = [];
-  if (stripeActive && row.stripeCurrentPeriodEnd) {
-    ends.push(row.stripeCurrentPeriodEnd);
+  if (polarActive && row.polarCurrentPeriodEnd) {
+    ends.push(row.polarCurrentPeriodEnd);
   }
   if (appleActive && row.appleExpiresAt) {
     ends.push(row.appleExpiresAt);
@@ -125,7 +133,7 @@ export function effectiveProFromSubscriptionRow(
       ? ends.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
       : undefined;
 
-  const isLaunchPricing = stripeActive ? row.stripeIsLaunchPricing : false;
+  const isLaunchPricing = polarActive ? row.polarIsLaunchPricing : false;
 
   return {
     isPro: true,
@@ -198,6 +206,7 @@ export async function ensureSubscriptionRow(
 }
 
 export async function getUserEntitlement(userId: string): Promise<Entitlement> {
+  await ensureSubscriptionRow(userId);
   const row = await getSubscriptionRow(userId);
   const [storageUsedBytes, deviceCount] = await Promise.all([
     getStorageUsedBytes(userId),
@@ -220,12 +229,13 @@ export async function getUserEntitlement(userId: string): Promise<Entitlement> {
   };
 }
 
-export type StripeProviderPatch = {
-  stripeCustomerId?: string | null;
-  stripeSubscriptionId?: string | null;
-  stripeStatus?: string | null;
-  stripeCurrentPeriodEnd?: string | null;
-  stripeIsLaunchPricing?: boolean;
+export type PolarProviderPatch = {
+  polarCustomerId?: string | null;
+  polarSubscriptionId?: string | null;
+  polarStatus?: string | null;
+  polarCurrentPeriodEnd?: string | null;
+  polarProductId?: string | null;
+  polarIsLaunchPricing?: boolean;
 };
 
 export type AppleProviderPatch = {
@@ -235,9 +245,9 @@ export type AppleProviderPatch = {
   appleStatus?: string | null;
 };
 
-export async function applyStripeProviderPatch(
+export async function applyPolarProviderPatch(
   userId: string,
-  patch: StripeProviderPatch,
+  patch: PolarProviderPatch,
 ): Promise<void> {
   await ensureSubscriptionRow(userId);
   const db = getDb();
@@ -308,9 +318,9 @@ export async function recomputeUserEntitlement(userId: string): Promise<void> {
     .where(eq(subscriptions.userId, userId));
 }
 
-export async function setStripeCustomerId(
+export async function setPolarCustomerId(
   userId: string,
-  stripeCustomerId: string,
+  polarCustomerId: string,
 ): Promise<void> {
   await ensureSubscriptionRow(userId);
   const db = getDb();
@@ -319,7 +329,7 @@ export async function setStripeCustomerId(
   await db
     .update(subscriptions)
     .set({
-      stripeCustomerId,
+      polarCustomerId,
       updatedAt: now,
     })
     .where(eq(subscriptions.userId, userId));

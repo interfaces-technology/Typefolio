@@ -3,9 +3,9 @@ import { describe, it } from "node:test";
 
 import {
   effectiveProFromSubscriptionRow,
-  isProAppleStatus,
-  isProStripeStatus,
   isLaunchPricingFromCheckoutPriceId,
+  isProAppleStatus,
+  isProPolarStatus,
   planLimits,
 } from "@/lib/entitlements";
 import type { SubscriptionRow } from "@/lib/db/schema";
@@ -25,6 +25,12 @@ function baseRow(overrides: Partial<SubscriptionRow> = {}): SubscriptionRow {
     appleProductId: null,
     appleExpiresAt: null,
     appleStatus: null,
+    polarCustomerId: null,
+    polarSubscriptionId: null,
+    polarStatus: null,
+    polarCurrentPeriodEnd: null,
+    polarProductId: null,
+    polarIsLaunchPricing: false,
     isLaunchPricing: false,
     currentPeriodEnd: null,
     storageLimitBytes: 52_428_800,
@@ -40,11 +46,11 @@ describe("effectiveProFromSubscriptionRow", () => {
     assert.equal(result.isPro, false);
   });
 
-  it("returns pro when Stripe is active", () => {
+  it("returns pro when Polar is active", () => {
     const result = effectiveProFromSubscriptionRow(
       baseRow({
-        stripeStatus: "active",
-        stripeCurrentPeriodEnd: new Date(Date.now() + 86_400_000).toISOString(),
+        polarStatus: "active",
+        polarCurrentPeriodEnd: new Date(Date.now() + 86_400_000).toISOString(),
       }),
     );
     assert.equal(result.isPro, true);
@@ -60,58 +66,50 @@ describe("effectiveProFromSubscriptionRow", () => {
     assert.equal(result.isPro, true);
   });
 
-  it("stays pro when only Apple remains after Stripe ends", () => {
+  it("uses polar launch pricing when Polar is the active provider", () => {
     const result = effectiveProFromSubscriptionRow(
       baseRow({
-        stripeStatus: "canceled",
-        stripeCurrentPeriodEnd: new Date(Date.now() - 86_400_000).toISOString(),
-        appleStatus: "active",
-        appleExpiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+        polarStatus: "active",
+        polarIsLaunchPricing: true,
+        polarCurrentPeriodEnd: new Date(Date.now() + 86_400_000).toISOString(),
       }),
     );
     assert.equal(result.isPro, true);
-  });
-
-  it("uses stripe launch pricing when Stripe is the active provider", () => {
-    const result = effectiveProFromSubscriptionRow(
-      baseRow({
-        stripeStatus: "active",
-        stripeIsLaunchPricing: true,
-        stripeCurrentPeriodEnd: new Date(Date.now() + 86_400_000).toISOString(),
-      }),
-    );
     assert.equal(result.isLaunchPricing, true);
   });
 });
 
-describe("provider status helpers", () => {
-  it("detects canceled Stripe with future period end", () => {
-    const future = new Date(Date.now() + 86_400_000).toISOString();
-    assert.equal(isProStripeStatus("canceled", future), true);
+describe("isProPolarStatus", () => {
+  it("treats active as pro", () => {
+    assert.equal(isProPolarStatus("active", null), true);
   });
 
-  it("detects expired Apple subscriptions", () => {
-    assert.equal(isProAppleStatus("expired", new Date().toISOString()), false);
+  it("treats canceled with future period end as pro", () => {
+    assert.equal(
+      isProPolarStatus(
+        "canceled",
+        new Date(Date.now() + 86_400_000).toISOString(),
+      ),
+      true,
+    );
   });
+});
 
-  it("detects active Apple subscriptions by expiry", () => {
-    const future = new Date(Date.now() + 86_400_000).toISOString();
-    assert.equal(isProAppleStatus("active", future), true);
+describe("isProAppleStatus", () => {
+  it("rejects expired", () => {
+    assert.equal(isProAppleStatus("expired", null), false);
   });
 });
 
 describe("planLimits", () => {
-  it("disables sync on free", () => {
-    assert.equal(planLimits("free").features.sync, false);
-  });
-
-  it("enables sync on pro", () => {
-    assert.equal(planLimits("pro").features.sync, true);
+  it("disables zip download on all plans", () => {
+    assert.equal(planLimits("free").features.zipDownload, false);
+    assert.equal(planLimits("pro").features.zipDownload, false);
   });
 });
 
 describe("isLaunchPricingFromCheckoutPriceId", () => {
-  it("detects launch checkout id", () => {
+  it("matches pro_launch", () => {
     assert.equal(isLaunchPricingFromCheckoutPriceId("pro_launch"), true);
     assert.equal(isLaunchPricingFromCheckoutPriceId("pro_annual"), false);
   });

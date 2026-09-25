@@ -16,6 +16,16 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: access.error }, { status: access.status });
   }
 
+  if (!access.emailVerified) {
+    return NextResponse.json(
+      {
+        error: "Verify your email before uploading fonts.",
+        code: "EMAIL_NOT_VERIFIED",
+      },
+      { status: 403 },
+    );
+  }
+
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   const rateLimit = checkRateLimit(`upload-fonts:${ip}`, 30, 60_000);
@@ -42,13 +52,6 @@ export async function POST(request: Request, context: RouteContext) {
     );
   }
 
-  if (files.length > 20) {
-    return NextResponse.json(
-      { error: "You can upload up to 20 font files at once." },
-      { status: 400 },
-    );
-  }
-
   const maxFileSize = 15 * 1024 * 1024;
   const oversized = files.find((file) => file.size > maxFileSize);
   if (oversized) {
@@ -63,6 +66,8 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({
       library: result.library,
       added: result.added.length,
+      updated: result.updated.length,
+      skipped: result.skipped.length,
       rejected: result.rejected,
     });
   } catch {
