@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireLibraryOwner } from "@/lib/access";
+import { requireLibraryOwner, requireSyncEntitlement } from "@/lib/access";
 import { getLibraryManifest } from "@/lib/manifest";
 
 interface RouteContext {
@@ -13,6 +13,14 @@ export async function GET(request: Request, context: RouteContext) {
 
   if (!access.ok) {
     return NextResponse.json({ error: access.error }, { status: access.status });
+  }
+
+  const syncAccess = await requireSyncEntitlement(access.userId);
+  if (!syncAccess.ok) {
+    return NextResponse.json(
+      { error: syncAccess.error, code: syncAccess.code },
+      { status: syncAccess.status },
+    );
   }
 
   const manifest = await getLibraryManifest(id);

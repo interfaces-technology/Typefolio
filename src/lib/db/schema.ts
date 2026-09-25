@@ -141,3 +141,62 @@ export const userProfiles = pgTable("user_profiles", {
     .default(false),
   updatedAt: timestamptz("updated_at").notNull(),
 });
+
+export const subscriptions = pgTable(
+  "subscriptions",
+  {
+    userId: text("user_id").primaryKey(),
+    plan: text("plan").notNull().default("free"),
+    status: text("status").notNull().default("active"),
+    revenuecatCustomerId: text("revenuecat_customer_id"),
+    stripeCustomerId: text("stripe_customer_id"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
+    stripeStatus: text("stripe_status"),
+    stripeCurrentPeriodEnd: timestamptz("stripe_current_period_end"),
+    stripeIsLaunchPricing: boolean("stripe_is_launch_pricing")
+      .notNull()
+      .default(false),
+    appleOriginalTransactionId: text("apple_original_transaction_id"),
+    appleProductId: text("apple_product_id"),
+    appleExpiresAt: timestamptz("apple_expires_at"),
+    appleStatus: text("apple_status"),
+    isLaunchPricing: boolean("is_launch_pricing").notNull().default(false),
+    currentPeriodEnd: timestamptz("current_period_end"),
+    storageLimitBytes: integer("storage_limit_bytes")
+      .notNull()
+      .default(52_428_800),
+    deviceLimit: integer("device_limit").notNull().default(1),
+    updatedAt: timestamptz("updated_at").notNull(),
+  },
+  (table) => [
+    index("subscriptions_stripe_customer_id_idx").on(table.stripeCustomerId),
+    uniqueIndex("subscriptions_apple_original_transaction_id_idx").on(
+      table.appleOriginalTransactionId,
+    ),
+  ],
+);
+
+export const billingEvents = pgTable(
+  "billing_events",
+  {
+    id: text("id").primaryKey(),
+    provider: text("provider").notNull(),
+    providerEventId: text("provider_event_id").notNull(),
+    userId: text("user_id"),
+    eventType: text("event_type").notNull(),
+    outcome: text("outcome").notNull(),
+    receivedAt: timestamptz("received_at").notNull(),
+    processedAt: timestamptz("processed_at"),
+  },
+  (table) => [
+    uniqueIndex("billing_events_provider_event_idx").on(
+      table.provider,
+      table.providerEventId,
+    ),
+    index("billing_events_user_id_idx").on(table.userId),
+  ],
+);
+
+export type SubscriptionRow = typeof subscriptions.$inferSelect;
+export type BillingEventRow = typeof billingEvents.$inferSelect;
+export type UserProfileRow = typeof userProfiles.$inferSelect;

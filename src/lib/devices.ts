@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
+import { checkDeviceCapacity } from "@/lib/access";
 import { getDb } from "@/lib/db";
 import { devices } from "@/lib/db/schema";
 import { getLibraryById, touchLibrary } from "@/lib/storage";
@@ -28,10 +29,20 @@ function toDevice(row: typeof devices.$inferSelect): Device {
   };
 }
 
+export type RegisterDeviceResult =
+  | { ok: true; device: Device; created: boolean }
+  | {
+      ok: false;
+      status: number;
+      error: string;
+      code?: string;
+      details?: Record<string, unknown>;
+    };
+
 export async function registerDevice(
   libraryId: string,
   input: RegisterDeviceInput,
-): Promise<{ device: Device } | null> {
+): Promise<RegisterDeviceResult | null> {
   const library = await getLibraryById(libraryId);
   if (!library) {
     return null;
@@ -60,7 +71,16 @@ export async function registerDevice(
       .where(eq(devices.id, existing.id))
       .returning();
     await touchLibrary(libraryId);
-    return { device: toDevice(updated ?? { ...existing, lastSeenAt: now }) };
+    return {
+      ok: true,
+      device: toDevice(updated ?? { ...existing, lastSeenAt: now }),
+      created: false,
+    };
+  }
+
+  const capacity = await checkDeviceCapacity(library.ownerUserId);
+  if (!capacity.ok) {
+    return capacity;
   }
 
   const device = {
@@ -77,7 +97,7 @@ export async function registerDevice(
   await db.insert(devices).values(device);
   await touchLibrary(libraryId);
 
-  return { device: toDevice(device) };
+  return { ok: true, device: toDevice(device), created: true };
 }
 
 export async function updateDevice(

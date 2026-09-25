@@ -59,5 +59,15 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Library not found" }, { status: 404 });
   }
 
-  return NextResponse.json(result, { status: 201 });
+  if (!result.ok) {
+    return NextResponse.json(
+      { error: result.error, code: result.code, details: result.details },
+      { status: result.status },
+    );
+  }
+
+  return NextResponse.json(
+    { device: result.device },
+    { status: result.created ? 201 : 200 },
+  );
 }

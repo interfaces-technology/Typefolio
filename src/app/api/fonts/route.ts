@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { requireSession } from "@/lib/access";
+import { checkStorageCapacity, requireSession } from "@/lib/access";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { addFontsToLibrary, getOrCreateUserLibrary } from "@/lib/storage";
 
@@ -53,6 +53,15 @@ export async function POST(request: Request) {
   }
 
   const library = await getOrCreateUserLibrary(session.userId!);
+
+  const totalUploadBytes = files.reduce((sum, file) => sum + file.size, 0);
+  const storageAccess = await checkStorageCapacity(session.userId, totalUploadBytes);
+  if (!storageAccess.ok) {
+    return NextResponse.json(
+      { error: storageAccess.error, code: storageAccess.code },
+      { status: storageAccess.status },
+    );
+  }
 
   try {
     const result = await addFontsToLibrary(library.id, files);

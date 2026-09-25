@@ -76,3 +76,54 @@ export interface LibrarySummary {
   createdAt: string;
   updatedAt: string;
 }
+
+export type PlanId = "free" | "pro";
+
+export type SubscriptionStatus =
+  | "active"
+  | "trialing"
+  | "past_due"
+  | "canceled"
+  | "expired";
+
+export interface EntitlementFeatures {
+  sync: boolean;
+  zipDownload: boolean;
+  compare: boolean;
+}
+
+export interface Entitlement {
+  plan: PlanId;
+  status: SubscriptionStatus;
+  isLaunchPricing: boolean;
+  storageLimitBytes: number;
+  storageUsedBytes: number;
+  deviceLimit: number;
+  deviceCount: number;
+  features: EntitlementFeatures;
+  currentPeriodEnd?: string;
+}
+
+export type CheckoutPriceId = "pro_annual" | "pro_launch" | "pro_monthly";
+
+export interface BillingPlanPublic {
+  id: CheckoutPriceId | "free";
+  name: string;
+  priceGbp: number;
+  interval: "year" | "month" | null;
+  storageLimitBytes: number;
+  deviceLimit: number;
+  features: string[];
+  highlight: boolean;
+  checkoutPriceId?: CheckoutPriceId;
+  badge?: string;
+  available?: boolean;
+}
+
+export interface BillingPlansResponse {
+  plans: BillingPlanPublic[];
+  launchOffer: {
+    active: boolean;
+    message: string;
+  };
+}

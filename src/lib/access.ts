@@ -1,5 +1,7 @@
 import { auth } from "@/lib/auth/server";
+import { getUserEntitlement } from "@/lib/entitlements";
 import { getLibraryById } from "@/lib/storage";
+import type { Entitlement } from "@/lib/types";
 
 export type AccessOk = {
   ok: true;
@@ -11,6 +13,8 @@ export type AccessErr = {
   ok: false;
   status: number;
   error: string;
+  code?: string;
+  details?: Record<string, unknown>;
 };
 
 function readBearerToken(request: Request): string | null {
@@ -124,4 +128,55 @@ export async function requireLibraryOwner(
   }
 
   return session;
+}
+
+export async function requireSyncEntitlement(
+  userId: string,
+): Promise<{ ok: true; entitlement: Entitlement } | AccessErr> {
+  const entitlement = await getUserEntitlement(userId);
+  if (!entitlement.features.sync) {
+    return {
+      ok: false,
+      status: 403,
+      error:
+        "Pro sync is required to use the native sync feature. Upgrade at typefolio.app/pricing.",
+      code: "SYNC_NOT_AVAILABLE",
+    };
+  }
+
+  return { ok: true, entitlement };
+}
+
+export async function checkStorageCapacity(
+  userId: string,
+  additionalBytes: number,
+): Promise<{ ok: true; entitlement: Entitlement } | AccessErr> {
+  const entitlement = await getUserEntitlement(userId);
+  if (entitlement.storageUsedBytes + additionalBytes > entitlement.storageLimitBytes) {
+    return {
+      ok: false,
+      status: 413,
+      error: "Upload would exceed your storage limit. Remove fonts or upgrade to Pro.",
+      code: "STORAGE_LIMIT_EXCEEDED",
+    };
+  }
+
+  return { ok: true, entitlement };
+}
+
+export async function checkDeviceCapacity(
+  userId: string,
+): Promise<{ ok: true; entitlement: Entitlement } | AccessErr> {
+  const entitlement = await getUserEntitlement(userId);
+  if (entitlement.deviceCount >= entitlement.deviceLimit) {
+    return {
+      ok: false,
+      status: 409,
+      error: `Your plan allows ${entitlement.deviceLimit} device${entitlement.deviceLimit === 1 ? "" : "s"}. Remove a device or upgrade to Pro.`,
+      code: "DEVICE_LIMIT_EXCEEDED",
+      details: { deviceLimit: entitlement.deviceLimit },
+    };
+  }
+
+  return { ok: true, entitlement };
 }

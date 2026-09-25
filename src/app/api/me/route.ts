@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireSession } from "@/lib/access";
+import { getUserEntitlement } from "@/lib/entitlements";
 import { getOrCreateUserLibrary } from "@/lib/storage";
 
 export async function GET(request: Request) {
@@ -9,7 +10,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
 
-  const library = await getOrCreateUserLibrary(session.userId);
+  const [library, entitlement] = await Promise.all([
+    getOrCreateUserLibrary(session.userId),
+    getUserEntitlement(session.userId),
+  ]);
 
   return NextResponse.json({
     user: { id: session.userId },
@@ -21,5 +25,6 @@ export async function GET(request: Request) {
       createdAt: library.createdAt,
       updatedAt: library.updatedAt,
     },
+    entitlement,
   });
 }
