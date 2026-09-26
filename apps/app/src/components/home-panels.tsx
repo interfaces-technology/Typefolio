@@ -7,6 +7,7 @@ import { Columns2 } from "lucide-react";
 import { FamilyTiles } from "@/components/family-tiles";
 import { FontList } from "@/components/font-list";
 import { UploadZone } from "@/components/upload-zone";
+import { UsageSummary } from "@/components/usage-summary";
 import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -16,19 +17,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { groupFontsByFamily } from "@typefolio/core/font-families";
-import type { Library } from "@typefolio/core/types";
+import type { Entitlement, Library } from "@typefolio/core/types";
 import { cn } from "@typefolio/core/utils";
 
 interface SignedInHomeProps {
   library: Library;
+  entitlement: Entitlement;
 }
 
-export function SignedInHome({ library: initialLibrary }: SignedInHomeProps) {
+export function SignedInHome({
+  library: initialLibrary,
+  entitlement,
+}: SignedInHomeProps) {
   const [library, setLibrary] = useState(initialLibrary);
   const families = useMemo(() => groupFontsByFamily(library.fonts), [library.fonts]);
 
   return (
     <div className="space-y-8">
+      <UsageSummary entitlement={entitlement} />
+
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Upload fonts</h2>
         <UploadZone onUploaded={setLibrary} />

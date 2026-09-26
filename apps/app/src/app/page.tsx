@@ -1,12 +1,22 @@
 import { SignedInHome, SignedOutHome } from "@/components/home-panels";
 import { getSessionUserId } from "@typefolio/core/access";
+import { getUserEntitlement } from "@typefolio/core/entitlements";
 import { getOrCreateUserLibrary } from "@typefolio/core/storage";
+import type { Entitlement, Library } from "@typefolio/core/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const userId = await getSessionUserId();
-  const library = userId ? await getOrCreateUserLibrary(userId) : null;
+  let library: Library | null = null;
+  let entitlement: Entitlement | null = null;
+
+  if (userId) {
+    [library, entitlement] = await Promise.all([
+      getOrCreateUserLibrary(userId),
+      getUserEntitlement(userId),
+    ]);
+  }
 
   return (
     <div className="flex min-h-full flex-col">
@@ -22,7 +32,11 @@ export default async function HomePage() {
           </p>
         </section>
 
-        {library ? <SignedInHome library={library} /> : <SignedOutHome />}
+        {library && entitlement ? (
+          <SignedInHome library={library} entitlement={entitlement} />
+        ) : (
+          <SignedOutHome />
+        )}
       </main>
     </div>
   );

@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { SignedInHome } from "@/components/home-panels";
 import { buttonVariants } from "@/components/ui/button";
 import { getSessionUserId } from "@typefolio/core/access";
+import { getUserEntitlement } from "@typefolio/core/entitlements";
 import { getLibraryById } from "@typefolio/core/storage";
 import { cn } from "@typefolio/core/utils";
 
@@ -51,6 +52,8 @@ export default async function LibraryPage({ params }: LibraryPageProps) {
     );
   }
 
+  const entitlement = await getUserEntitlement(userId);
+
   return (
     <div className="flex min-h-full flex-col">
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -67,7 +70,7 @@ export default async function LibraryPage({ params }: LibraryPageProps) {
             <p className="text-muted-foreground">{library.description}</p>
           ) : null}
         </header>
-        <SignedInHome library={library} />
+        <SignedInHome library={library} entitlement={entitlement} />
       </main>
     </div>
   );

@@ -23,6 +23,20 @@ export async function SiteHeader() {
         <div className="flex items-center gap-2 sm:gap-3">
           {session?.user ? (
             <>
+              <nav className="flex items-center gap-1">
+                <Link
+                  href="/"
+                  className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                >
+                  Library
+                </Link>
+                <Link
+                  href="/account"
+                  className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+                >
+                  Account
+                </Link>
+              </nav>
               <span className="hidden max-w-40 truncate text-sm text-muted-foreground sm:block">
                 {session.user.name || session.user.email}
               </span>

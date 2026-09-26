@@ -6,13 +6,12 @@ import { toast } from "sonner";
 import { buttonVariants, Button } from "@/components/ui/button";
 import { cn } from "@typefolio/core/utils";
 import { formatFileSize } from "@typefolio/core/font-validation";
-import { deleteFont, fontDownloadPath, libraryZipPath } from "@typefolio/core/api";
+import { deleteFont, fontDownloadPath } from "@typefolio/core/api";
 import type { FontFile } from "@typefolio/core/types";
 
 interface FontListProps {
   libraryId: string;
   fonts: FontFile[];
-  showDownloadAll?: boolean;
   canDelete?: boolean;
   onDeleted?: (fontId: string) => void;
 }
@@ -20,7 +19,6 @@ interface FontListProps {
 export function FontList({
   libraryId,
   fonts,
-  showDownloadAll = true,
   canDelete = false,
   onDeleted,
 }: FontListProps) {
@@ -52,21 +50,7 @@ export function FontList({
   }
 
   return (
-    <div className="space-y-4">
-      {showDownloadAll && (
-        <div className="flex justify-end">
-          <a
-            href={libraryZipPath(libraryId)}
-            download
-            className={cn(buttonVariants())}
-          >
-            <Download className="size-4" />
-            Download all as ZIP
-          </a>
-        </div>
-      )}
-
-      <ul className="divide-y rounded-xl border bg-card">
+    <ul className="divide-y rounded-xl border bg-card">
         {fonts.map((font) => (
           <li
             key={font.id}
@@ -102,7 +86,6 @@ export function FontList({
             </div>
           </li>
         ))}
-      </ul>
-    </div>
+    </ul>
   );
 }
