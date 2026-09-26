@@ -8,6 +8,24 @@ export function getAppOrigin(): string {
   return configured.replace(/\/$/, "");
 }
 
+export function getWebOrigin(): string | null {
+  const configured = process.env.NEXT_PUBLIC_WEB_URL?.trim();
+  return configured ? configured.replace(/\/$/, "") : null;
+}
+
+export function getTrustedOrigins(): string[] {
+  const origins = new Set<string>([getAppOrigin()]);
+  const web = getWebOrigin();
+  if (web) {
+    origins.add(web);
+  }
+  if (!isProductionAuth()) {
+    origins.add("http://127.0.0.1:43126");
+    origins.add("http://localhost:43126");
+  }
+  return [...origins];
+}
+
 export function getAuthBaseUrl(): string {
   const api =
     process.env.BETTER_AUTH_URL?.trim() ||
