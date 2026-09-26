@@ -1,11 +1,16 @@
-export function getAppOrigin(): string {
+/** Public marketing site (landing, pricing). Product web UI is rebuilt separately. */
+export function getMarketingOrigin(): string {
   const configured =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    process.env.BETTER_AUTH_URL?.trim() ||
+    process.env.NEXT_PUBLIC_MARKETING_URL?.trim() ||
     process.env.APP_URL?.trim() ||
-    "http://127.0.0.1:43124";
+    "http://127.0.0.1:43125";
 
   return configured.replace(/\/$/, "");
+}
+
+/** @deprecated Use getMarketingOrigin() for user-facing redirects. */
+export function getAppOrigin(): string {
+  return getMarketingOrigin();
 }
 
 export function getAuthBaseUrl(): string {
@@ -15,7 +20,7 @@ export function getAuthBaseUrl(): string {
   if (api) {
     return api.replace(/\/$/, "");
   }
-  return getAppOrigin();
+  return "http://127.0.0.1:43123";
 }
 
 export function getPublicApiBase(): string {

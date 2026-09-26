@@ -1,0 +1,50 @@
+"use server";
+
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { isAPIError } from "better-auth/api";
+
+import { auth } from "@typefolio/core/auth/server";
+import { isAllowedDesktopRedirectUri } from "@typefolio/core/desktop-auth";
+
+export async function signUpWithEmail(
+  _prevState: { error: string } | null,
+  formData: FormData,
+) {
+  const email = formData.get("email") as string;
+  const name = formData.get("name") as string;
+  const password = formData.get("password") as string;
+  const redirectUri = formData.get("redirect_uri");
+
+  if (!email?.trim() || !name?.trim() || !password) {
+    return { error: "Name, email, and password are required." };
+  }
+
+  try {
+    await auth.api.signUpEmail({
+      body: {
+        email: email.trim(),
+        name: name.trim(),
+        password,
+      },
+      headers: await headers(),
+    });
+  } catch (error) {
+    if (isAPIError(error)) {
+      return { error: error.message || "Could not create account." };
+    }
+    throw error;
+  }
+
+  if (
+    typeof redirectUri === "string" &&
+    redirectUri &&
+    isAllowedDesktopRedirectUri(redirectUri)
+  ) {
+    redirect(
+      `/auth/desktop?redirect_uri=${encodeURIComponent(redirectUri)}&verify=1`,
+    );
+  }
+
+  redirect("/auth/sign-up?verify=1");
+}

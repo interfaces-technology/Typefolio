@@ -1,6 +1,6 @@
 import { Polar } from "@polar-sh/sdk";
 
-import { getAppOrigin } from "@typefolio/core/auth/config";
+import { getMarketingOrigin } from "@typefolio/core/auth/config";
 import {
   effectiveProFromSubscriptionRow,
   getSubscriptionRow,
@@ -79,13 +79,13 @@ export async function createCheckoutSession(input: {
     throw new Error("already_subscribed");
   }
 
-  const origin = getAppOrigin();
+  const origin = getMarketingOrigin();
   const checkout = await polar.checkouts.create({
     products: [validated.polarProductId],
     externalCustomerId: input.userId,
     customerEmail: input.email ?? undefined,
     customerIpAddress: input.customerIpAddress ?? undefined,
-    successUrl: `${origin}/library?checkout=success`,
+    successUrl: `${origin}/?checkout=success`,
     metadata: {
       userId: input.userId,
       checkoutPriceId: input.priceId,
@@ -133,10 +133,10 @@ export async function createPortalSession(
     return null;
   }
 
-  const origin = getAppOrigin();
+  const origin = getMarketingOrigin();
   const session = await polar.customerSessions.create({
     externalCustomerId: userId,
-    returnUrl: `${origin}/library`,
+    returnUrl: `${origin}/`,
   });
 
   return { portalUrl: session.customerPortalUrl };

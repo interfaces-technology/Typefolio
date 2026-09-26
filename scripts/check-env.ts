@@ -4,7 +4,7 @@ const required = [
   "BETTER_AUTH_SECRET",
   "BETTER_AUTH_URL",
   "NEXT_PUBLIC_API_URL",
-  "NEXT_PUBLIC_APP_URL",
+  "NEXT_PUBLIC_MARKETING_URL",
 ] as const;
 
 const recommended = [

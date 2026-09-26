@@ -3,8 +3,8 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 
 import {
-  getAppOrigin,
   getAuthBaseUrl,
+  getMarketingOrigin,
   getPasskeyRpId,
   isProductionAuth,
 } from "@typefolio/core/auth/config";
@@ -35,7 +35,7 @@ const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
 export const auth = betterAuth({
   baseURL: getAuthBaseUrl(),
   secret: requiredEnv("BETTER_AUTH_SECRET"),
-  trustedOrigins: [getAppOrigin()],
+  trustedOrigins: [getAuthBaseUrl(), getMarketingOrigin()],
   advanced: {
     useSecureCookies: isProductionAuth(),
   },

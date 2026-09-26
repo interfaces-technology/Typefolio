@@ -11,8 +11,7 @@ typefolio/
 ├── packages/core/          # @typefolio/core — db, entitlements, billing, storage
 ├── apps/
 │   ├── marketing/          # @typefolio/marketing — landing, pricing, legal
-│   ├── app/                # @typefolio/app — auth UI, library, specimen, billing UI
-│   ├── api/                # @typefolio/api — webhooks + JSON API + Better Auth
+│   ├── api/                # @typefolio/api — webhooks, JSON API, Better Auth, /auth/desktop
 │   └── admin/              # (later) founder console
 ├── apps/typefolio-native/  # Swift macOS + iPad
 ├── apps/typefolio-desktop/ # Electron (optional)
@@ -24,9 +23,10 @@ Each folder is **one Vercel project** with **Root Directory** set to that path (
 | Vercel project | Domain (prod) | Builds when | Role |
 |----------------|---------------|-------------|------|
 | `typefolio-marketing` | `typefolio.app` | `turbo run build --filter=marketing` | Story, pricing, SEO; no DB |
-| `typefolio-app` | `app.typefolio.app` | `filter=app` | Sign-in, library, uploads (UI → API) |
-| `typefolio-api` | `api.typefolio.app` | `filter=api` | Stripe/Apple webhooks, `/api/*`, sync |
+| `typefolio-api` | `api.typefolio.app` | `filter=api` | Webhooks, `/api/*`, native browser sign-in |
 | `typefolio-admin` | `admin.typefolio.app` | `filter=admin` | Ops (later) |
+
+**Note:** The product web app (`app.typefolio.app` / former `apps/app`) was removed while the UI is rebuilt in Figma. Account creation and Mac/iPad browser sign-in live on the **API** host (`/auth/sign-up`, `/auth/desktop`). A new Vercel project can be added when the redesigned web app ships.
 
 **Ignored Build Step** (each project): `npx turbo-ignore --fallback=HEAD^1`  
 **Build command** (each project): `cd ../.. && turbo run build --filter=<package-name>`
@@ -37,7 +37,7 @@ Optional: `gettypefolio.com` → 308 redirect to `https://typefolio.app`.
 
 - **Different change cadence** — copy and landing experiments without redeploying auth, library, or webhooks.
 - **Minimal secrets** — marketing should not receive `DATABASE_URL`, Stripe signing secrets, or Apple keys.
-- **Smaller attack surface** — static/ISR pages only; CTAs link to `app.typefolio.app`.
+- **Smaller attack surface** — static/ISR pages only; CTAs link to `api.typefolio.app` for auth.
 - **Clear analytics** — marketing conversion vs product usage.
 
 Today’s root `src/app/page.tsx` mixes **marketing hero** and **signed-in library**. After split:
@@ -45,75 +45,55 @@ Today’s root `src/app/page.tsx` mixes **marketing hero** and **signed-in libra
 | Today | After split |
 |-------|-------------|
 | `/` hero + upload UI | **Marketing** `/` hero, features, pricing |
-| `/auth/*`, `/library/*` | **App** only |
+| `/auth/desktop`, `/auth/sign-up` (native + accounts) | **API** |
 | `/api/*` | **API** only |
 
-Signed-in users open **app**, not marketing. Marketing CTAs: `https://app.typefolio.app/auth/sign-up` and `…/auth/sign-in`.
+Marketing CTAs: `https://api.typefolio.app/auth/sign-up` (or marketing-only waitlist until the new web app exists).
 
 ## Routing between projects
 
 **Do not** use [Microfrontends](https://vercel.com/docs/microfrontends) for this — we use **different hostnames**, not path routing on one apex.
 
-- Browser **product UI** calls **`https://api.typefolio.app`** (CORS + credentials) **or** app project rewrites (same-origin cookie option):
+- Browser clients call **`https://api.typefolio.app`** directly (CORS + credentials where needed).
 
-```json
-{
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "https://api.typefolio.app/api/:path*"
-    }
-  ]
-}
-```
-
-Prefer **direct API URL** in the app (`NEXT_PUBLIC_API_URL`) for clarity; rewrites are optional for cookie ergonomics.
-
-**Webhooks** (Stripe, Apple) must target **`https://api.typefolio.app/api/webhooks/...`** only.
+**Webhooks** (Stripe, Apple, Polar) must target **`https://api.typefolio.app/api/webhooks/...`** only.
 
 ## Auth (Neon) across subdomains
 
 Configure Neon Auth / trusted origins for:
 
-- `https://typefolio.app` (marketing — usually no session)
-- `https://app.typefolio.app` (session + OAuth callbacks)
-- Preview URLs for both app and api projects
-
-Use a **parent cookie domain** (`.typefolio.app`) only if you intentionally share sessions between marketing and app; typical pattern is **session only on `app`**, marketing stays anonymous.
+- `https://typefolio.app` (marketing)
+- `https://api.typefolio.app` (Better Auth + OAuth callbacks + `/auth/desktop`)
+- Preview URLs for marketing and api projects
 
 ## Environment variables
 
 Each **deployment** inherits from its **project** env for Production / Preview / Development. You configure vars once per project (or once as **shared** linked to several projects).
 
-### Shared (team → link to api + app)
+### Shared (team → link to api)
 
-| Variable | Marketing | App | API | Admin |
-|----------|:---------:|:---:|:---:|:-----:|
-| `DATABASE_URL` | — | ✓ | ✓ | ✓ (read) |
-| Neon Auth server secrets | — | ✓ | ✓ | ✓ |
-| Blob read/write keys | — | ✓ | ✓ | — |
-| `STRIPE_SECRET_KEY` | — | — | ✓ | — |
-| `STRIPE_WEBHOOK_SECRET` | — | — | ✓ | — |
-| Apple App Store / webhook keys | — | — | ✓ | — |
-| `ADMIN_USER_IDS` | — | — | — | ✓ |
+| Variable | Marketing | API | Admin |
+|----------|:---------:|:---:|:-----:|
+| `DATABASE_URL` | — | ✓ | ✓ (read) |
+| Neon Auth server secrets | — | ✓ | ✓ |
+| Blob read/write keys | — | ✓ | — |
+| `STRIPE_SECRET_KEY` | — | ✓ | — |
+| `STRIPE_WEBHOOK_SECRET` | — | ✓ | — |
+| Apple App Store / webhook keys | — | ✓ | — |
+| `ADMIN_USER_IDS` | — | — | ✓ |
 
 ### Per-project URLs (Production example)
 
-| Variable | Marketing | App | API |
-|----------|-----------|-----|-----|
-| `NEXT_PUBLIC_APP_URL` | `https://app.typefolio.app` (CTA links) | `https://app.typefolio.app` | — |
-| `NEXT_PUBLIC_MARKETING_URL` | `https://typefolio.app` | `https://typefolio.app` | — |
-| `NEXT_PUBLIC_API_URL` | — | `https://api.typefolio.app` | — |
-| `APP_URL` (server) | — | `https://app.typefolio.app` | — |
-| Stripe **Price IDs** (public) | optional on `/pricing` | ✓ checkout UI | ✓ checkout API |
-
-Marketing **Preview** needs only public URLs pointing at **Preview app** (or production app during early phase). App + API previews should share the same **Neon preview branch** via Preview-scoped `DATABASE_URL`.
+| Variable | Marketing | API |
+|----------|-----------|-----|
+| `NEXT_PUBLIC_MARKETING_URL` | `https://typefolio.app` | `https://typefolio.app` |
+| `NEXT_PUBLIC_API_URL` | `https://api.typefolio.app` (CTA links) | — |
+| `BETTER_AUTH_URL` | — | `https://api.typefolio.app` |
 
 ### Local dev
 
 ```bash
 cd apps/marketing && vercel link --project typefolio-marketing && vercel env pull .env.local
-cd apps/app       && vercel link --project typefolio-app       && vercel env pull .env.local
 cd apps/api       && vercel link --project typefolio-api       && vercel env pull .env.local
 ```
 
@@ -124,7 +104,7 @@ Repo root keeps **`.env.example`** as the checklist; secrets never committed.
 1. ~~Ship billing E2E on single Next app (PR #6).~~
 2. ~~Scaffold Turborepo: `packages/core`, `apps/api`, `apps/app`, `apps/marketing`.~~
 3. Wire Vercel projects + `api.typefolio.app`; tune CORS/cookies for split hosts.
-4. Flesh out marketing (`apps/marketing`) and redesign product (`apps/app`).
+4. Flesh out marketing (`apps/marketing`); ship redesigned product web app from Figma (new Vercel project when ready).
 5. **`apps/admin`** when founder console exists.
 
 Do not big-bang all apps in one PR. Keep `main` deployable after each step.
