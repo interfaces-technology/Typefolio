@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PORT="${SYNCFONT_PORT:-43123}"
 HOST="${SYNCFONT_HOST:-127.0.0.1}"
 BASE_URL="http://${HOST}:${PORT}"
-APP_DIR="${ROOT_DIR}/apps/SyncFont"
+APP_DIR="${ROOT_DIR}/apps/typefolio-native"
 
 NEXT_PID=""
 MAC_PID=""
@@ -82,10 +82,10 @@ fi
 
 stop_port "$PORT"
 
-log "Starting Next.js on ${BASE_URL}…"
+log "Starting Next.js API on ${BASE_URL}…"
 (
   cd "$ROOT_DIR"
-  npm run dev
+  npm run dev:api
 ) &
 NEXT_PID=$!
 
@@ -99,7 +99,7 @@ log "Next.js is ready."
 log "Starting macOS app…"
 (
   cd "$APP_DIR"
-  swift run SyncFont
+  swift run Typefolio
 ) &
 MAC_PID=$!
 

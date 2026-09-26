@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 
-import { getDb } from "../src/lib/db";
-import { authUser } from "../src/lib/db/schema-auth";
+import { getDb } from "@typefolio/core/db";
+import { authUser } from "@typefolio/core/db/schema-auth";
 
 const email = process.argv[2]?.trim().toLowerCase();
 if (!email) {

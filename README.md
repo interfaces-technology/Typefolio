@@ -4,78 +4,48 @@ Your fonts, on every device.
 
 Upload font files once. Sign in with the same account on web, Mac, or iPad to sync and install them.
 
-Product strategy, pricing, and billing decisions: [`docs/PRODUCT.md`](docs/PRODUCT.md).
+Product strategy: [`docs/PRODUCT.md`](docs/PRODUCT.md) · Repo map: [`docs/MAP.md`](docs/MAP.md)
 
-## Features
+## Monorepo
 
-- Sign in and upload `.ttf`, `.otf`, `.woff`, and `.woff2` files
-- Fonts stay with your account — no sync code to share
-- Download individual fonts or the full set as a ZIP
-- Native macOS app auto-installs fonts to `~/Library/Fonts`
-- Native iPad app syncs and installs fonts system-wide (`.ttf` / `.otf`)
-
-## Run locally
+| Workspace | Local URL | Purpose |
+|-----------|-----------|---------|
+| `@typefolio/api` | http://127.0.0.1:43123 | API, webhooks, Better Auth |
+| `@typefolio/app` | http://127.0.0.1:43124 | **Product UI** (library, auth pages) |
+| `@typefolio/marketing` | http://127.0.0.1:43125 | Marketing landing shell |
+| `@typefolio/core` | — | Shared DB, billing, storage |
 
 ```bash
 npm install
-npm run dev
+cp .env.example .env.local   # fill in Neon, Blob, Better Auth, Polar, Resend
+npm run check:env
+npm run dev                  # all web apps (Turborepo)
+# or: npm run dev:api | dev:app | dev:marketing
+npm run smoke                # hits API on :43123
+npm test
 ```
 
-Open [http://127.0.0.1:43123](http://127.0.0.1:43123).
+## Native (macOS + iPad)
 
-To run the API and macOS app together (frees port 43123 first if needed):
+[`apps/typefolio-native/README.md`](apps/typefolio-native/README.md)
 
 ```bash
-npm run dev:all
+cd apps/typefolio-native
+swift run Typefolio
 ```
 
-Requires Neon (Postgres + Auth) and Vercel Blob environment variables in `.env.local`.
-
-## Native app (macOS + iPad)
-
-See [`apps/SyncFont/README.md`](apps/SyncFont/README.md).
+API + Mac together:
 
 ```bash
-cd apps/SyncFont
-swift build
-swift run SyncFont
+npm run dev:native
 ```
-
-Or open `apps/SyncFont/SyncFont.xcodeproj` in Xcode.
-
-## How it works
-
-1. **Sign in** on the web app or native app.
-2. **Upload** font files on the web.
-3. **macOS app** polls your library and installs new fonts locally.
-4. **iPad app** polls your library and installs new fonts system-wide.
-
-Font files are stored in Vercel Blob. Users and metadata live in Neon.
-
-## API
-
-The Next.js app is the first client of this API. Native apps use the same endpoints with `Authorization: Bearer …`.
-
-| Method | Path | Auth | Purpose |
-|--------|------|------|---------|
-| `POST` | `/api/auth/*` | — | Neon Auth (sign up, sign in, session, access token) |
-| `GET` | `/api/me` | Session or Bearer | Current user + library metadata |
-| `POST` | `/api/fonts` | Session or Bearer | Upload fonts |
-| `GET` | `/api/libraries/:id` | Session or Bearer (owner) | Get the collection |
-| `GET` | `/api/libraries/:id/manifest` | Session or Bearer (owner) | Font manifest + etag |
-| `GET` | `/api/libraries/:id/fonts/:fontId` | Session or Bearer (owner) | Download a font |
-| `DELETE` | `/api/libraries/:id/fonts/:fontId` | Session or Bearer (owner) | Delete a font |
-| `GET` | `/api/libraries/:id/download` | Session or Bearer (owner) | Download all fonts as ZIP |
-| `POST` | `/api/libraries/:id/devices` | Session or Bearer (owner) | Register a device |
-| `PATCH` | `/api/libraries/:id/devices/:deviceId` | Session or Bearer (owner) | Report sync status |
 
 ## Tech stack
 
-- **API / web:** Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui
-- **Native:** SwiftUI (macOS + iPadOS)
-- **Auth:** Neon Auth (Managed Better Auth)
+- **Web:** Next.js 16, Turborepo, Tailwind, shadcn/ui
+- **Native:** SwiftUI (`apps/typefolio-native`)
+- **Auth:** Better Auth + Resend
+- **Billing:** Polar (web) + Apple webhooks (iPad)
 - **Data:** Neon Postgres + Vercel Blob
-
-## Repo
 
 https://github.com/interfaces-technology/Typefolio

@@ -7,14 +7,15 @@ Official references: [Monorepos on Vercel](https://vercel.com/docs/monorepos/tur
 ## Target layout (Turborepo)
 
 ```
-syncFont/
-├── packages/core/          # db, entitlements, billing logic, storage helpers (no Next)
+typefolio/
+├── packages/core/          # @typefolio/core — db, entitlements, billing, storage
 ├── apps/
-│   ├── marketing/          # typefolio.app — landing, pricing, legal
-│   ├── app/                # app.typefolio.app — auth, library, specimen, billing UI
-│   ├── api/                # api.typefolio.app — webhooks + native + JSON API
-│   └── admin/              # admin.typefolio.app — founder console (later)
-├── apps/SyncFont/            # Swift (unchanged)
+│   ├── marketing/          # @typefolio/marketing — landing, pricing, legal
+│   ├── app/                # @typefolio/app — auth UI, library, specimen, billing UI
+│   ├── api/                # @typefolio/api — webhooks + JSON API + Better Auth
+│   └── admin/              # (later) founder console
+├── apps/typefolio-native/  # Swift macOS + iPad
+├── apps/typefolio-desktop/ # Electron (optional)
 └── turbo.json
 ```
 
@@ -120,12 +121,11 @@ Repo root keeps **`.env.example`** as the checklist; secrets never committed.
 
 ## Migration order
 
-1. **Ship billing E2E** on current single Next app (PR #6 path).
-2. **Extract `packages/core`** — no behavior change.
-3. **`apps/api`** + Vercel project + `api.typefolio.app`; move `src/app/api/**`.
-4. **`apps/app`** + `app.typefolio.app`; move `src/app/auth/**`, `src/app/library/**`, product components.
-5. **`apps/marketing`** + `typefolio.app`; new landing/pricing; strip DB from marketing build.
-6. **`apps/admin`** when founder console exists.
+1. ~~Ship billing E2E on single Next app (PR #6).~~
+2. ~~Scaffold Turborepo: `packages/core`, `apps/api`, `apps/app`, `apps/marketing`.~~
+3. Wire Vercel projects + `api.typefolio.app`; tune CORS/cookies for split hosts.
+4. Flesh out marketing (`apps/marketing`) and redesign product (`apps/app`).
+5. **`apps/admin`** when founder console exists.
 
 Do not big-bang all apps in one PR. Keep `main` deployable after each step.
 

@@ -3,6 +3,7 @@ const required = [
   "BLOB_READ_WRITE_TOKEN",
   "BETTER_AUTH_SECRET",
   "BETTER_AUTH_URL",
+  "NEXT_PUBLIC_API_URL",
   "NEXT_PUBLIC_APP_URL",
 ] as const;
 
