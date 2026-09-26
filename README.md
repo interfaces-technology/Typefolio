@@ -43,7 +43,7 @@ npm run dev:native
 
 ## Tech stack
 
-- **Web:** Next.js 16, Turborepo, Tailwind (marketing)
+- **Web:** Next.js 16, Turborepo (API + marketing)
 - **Native:** SwiftUI (`apps/typefolio-native`)
 - **Auth:** Better Auth + Resend
 - **Billing:** Polar (web) + Apple webhooks (iPad)

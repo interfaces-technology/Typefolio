@@ -1,21 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Typefolio — Your fonts, on every device",
   description:
-    "Upload font files once. Sync and install on Mac, iPad, and the web.",
+    "Upload font files once. Sync and install on Mac and iPad.",
 };
 
 export default function MarketingLayout({
@@ -24,11 +12,18 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full bg-background text-foreground">{children}</body>
+    <html lang="en">
+      <body
+        style={{
+          margin: 0,
+          minHeight: "100vh",
+          fontFamily: "system-ui, sans-serif",
+          color: "#171717",
+          background: "#fafafa",
+        }}
+      >
+        {children}
+      </body>
     </html>
   );
 }

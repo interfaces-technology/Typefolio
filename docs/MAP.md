@@ -12,7 +12,6 @@ packages/core/          @typefolio/core — DB, auth, billing, storage, entitlem
 apps/api/               @typefolio/api — /api/*, webhooks, Better Auth, /auth/desktop
 apps/marketing/         @typefolio/marketing — landing & pricing shell
 apps/typefolio-native/  SwiftUI macOS + iPadOS
-apps/typefolio-desktop/ Electron (experimental)
 ```
 
 The signed-in **product web UI** is being redesigned in Figma (former `apps/app` removed from the repo).
