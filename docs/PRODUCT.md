@@ -13,9 +13,14 @@ Decisions from product strategy planning (Sep 2026). This doc is the source of t
 
 | Domain | Status | Notes |
 |--------|--------|-------|
-| `typefolio.app` | Available (~$9.99/yr on Vercel) | **Primary** |
+| `typefolio.app` | Available (~$9.99/yr on Vercel) | **Marketing** site (landing, pricing, legal) |
+| `app.typefolio.app` | Subdomain on same zone | **Product** (auth, library, billing UI) |
+| `api.typefolio.app` | Subdomain on same zone | **API** + webhooks + native clients |
+| `admin.typefolio.app` | Subdomain (later) | Founder console |
 | `typefolio.com` | Taken | — |
-| `gettypefolio.com` | Available (~$11.25/yr) | Optional marketing redirect |
+| `gettypefolio.com` | Available (~$11.25/yr) | Optional redirect → `typefolio.app` |
+
+Deployment split and env matrix: [`docs/DEPLOYMENT.md`](DEPLOYMENT.md).
 
 Names considered and not chosen: Inkwell (strong brand, but bare domains taken), syncFont (too narrow for a real product brand).
 
@@ -192,18 +197,20 @@ Main variable: **active Mac users polling manifest** (currently every 30s while 
 
 Plus: domain ~£10/yr; Apple Developer **£99/yr** if shipping on App Store.
 
-## Implementation checklist (not done)
+## Implementation checklist
 
 - [ ] Buy `typefolio.app`
-- [ ] RevenueCat project + Stripe connection
-- [ ] Products: Pro annual (£40), Pro launch (£20, grandfathered), Pro monthly (£4.99)
-- [ ] Webhook: RevenueCat → API → entitlement in DB
-- [ ] Gate `/api/.../manifest` and downloads on `pro` (or free-tier limits)
-- [ ] Pricing page: show £40 anchor + £20 launch offer; explain grandfathering
-- [ ] Rebrand UI/copy from syncFont → Typefolio
-- [ ] Mac app: upgrade opens web checkout
-- [ ] iPad App Store: defer or add RevenueCat IAP when shipping
-- [ ] Email capture on free signup (for launch promos and product updates)
+- [ ] Stripe products/prices in Dashboard + env (`STRIPE_PRICE_*`)
+- [ ] Stripe webhook → `POST /api/webhooks/stripe` (see [`docs/BILLING-E2E.md`](BILLING-E2E.md))
+- [ ] App Store Connect + `POST /api/webhooks/apple` with `appAccountToken` = user id
+- [x] Gate manifest sync on Pro (`SYNC_NOT_AVAILABLE`)
+- [x] Gate uploads on storage cap; devices on device cap
+- [ ] Pricing UI wired to `/api/billing/*`
+- [ ] Mac/iPad: upgrade opens web checkout; iOS sets `appAccountToken` on IAP
+
+## Related code
+
+Billing API: `src/app/api/billing/*`, webhooks: `src/app/api/webhooks/stripe|apple`, entitlements: `src/lib/entitlements.ts`. RevenueCat webhook returns 410.
 
 ## Repo
 
@@ -213,4 +220,4 @@ Plus: domain ~£10/yr; Apple Developer **£99/yr** if shipping on App Store.
 
 ## Related code (current repo)
 
-Rebrand and billing are **not implemented** yet. Existing app name in code is still `syncFont`. Marketplace work is out of scope for v1.
+Rebrand UI may still say syncFont in places. Marketplace work is out of scope for v1.

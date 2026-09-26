@@ -1,28 +1,41 @@
 # Typefolio map
 
-Cloud API + Next.js web client + native SwiftUI apps. Fonts live in Vercel Blob; users and metadata live in Neon.
+Turborepo: shared core + three Next.js apps + native clients. Fonts live in Vercel Blob; users and metadata live in Neon.
 
-**Product strategy:** see [`docs/PRODUCT.md`](PRODUCT.md) (naming, pricing, billing, launch scope).
+**Product strategy:** [`docs/PRODUCT.md`](PRODUCT.md)  
+**Deploy split:** [`docs/DEPLOYMENT.md`](DEPLOYMENT.md)
 
-## Areas
+## Layout
 
-- **API:** [`src/app/api/`](src/app/api/) — auth, font upload, font download, manifest, devices
-- **Access:** [`src/lib/access.ts`](src/lib/access.ts) — session + bearer token auth
-- **Auth:** [`src/lib/auth/`](src/lib/auth/) — Neon Auth server + client
-- **Storage:** [`src/lib/storage.ts`](src/lib/storage.ts) + [`src/lib/db/`](src/lib/db/) — Postgres + Blob
-- **Web client:** [`src/app/page.tsx`](src/app/page.tsx), [`src/app/library/`](src/app/library/), [`src/app/auth/`](src/app/auth/)
-- **Native apps:** [`apps/SyncFont/`](apps/SyncFont/) — SwiftUI macOS and iPadOS (sync + install)
+```
+packages/core/          @typefolio/core — DB, auth, billing, storage, entitlements
+apps/api/               @typefolio/api — /api/*, webhooks, Better Auth handler
+apps/app/               @typefolio/app — signed-in product UI (design here)
+apps/marketing/         @typefolio/marketing — landing & pricing shell
+apps/typefolio-native/  SwiftUI macOS + iPadOS
+apps/typefolio-desktop/ Electron (experimental)
+```
 
-## Auth
+## Local ports
 
-- Signed-in user uploads and sees their fonts. Same account on any device.
-- Each user has one collection behind the scenes (`getOrCreateUserLibrary`).
-- Native apps authenticate with email/password, store a bearer token in Keychain, and call `GET /api/me`.
-- There is no public create-library or sync-code sharing.
+| Package | Port |
+|---------|------|
+| API | 43123 |
+| App | 43124 |
+| Marketing | 43125 |
 
 ## Where new things go
 
-- Pages → `src/app/<path>/page.tsx`
-- API → `src/app/api/<path>/route.ts`
-- Data access → `src/lib/`
-- Native SwiftUI → `apps/SyncFont/Shared/` (shared), `apps/SyncFont/macOS/`, `apps/SyncFont/iOS/`
+| Change | Location |
+|--------|----------|
+| API route | `apps/api/src/app/api/.../route.ts` |
+| Product page / component | `apps/app/src/app/`, `apps/app/src/components/` |
+| Marketing page | `apps/marketing/src/app/` |
+| Shared server logic | `packages/core/src/lib/` |
+| Native SwiftUI | `apps/typefolio-native/Shared/`, `macOS/`, `iOS/` |
+
+## Auth
+
+- Better Auth runs on the **API** app (`BETTER_AUTH_URL` / `NEXT_PUBLIC_API_URL`).
+- Product app uses session cookies via `/api` rewrites when `NEXT_PUBLIC_API_URL` is set.
+- Native apps use bearer tokens from desktop auth flow.
