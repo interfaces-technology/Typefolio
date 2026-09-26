@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { isAPIError } from "better-auth/api";
 
 import { auth } from "@typefolio/core/auth/server";
+import { isAllowedDesktopRedirectUri } from "@typefolio/core/desktop-auth";
 
 export async function signUpWithEmail(
   _prevState: { error: string } | null,
@@ -13,6 +14,7 @@ export async function signUpWithEmail(
   const email = formData.get("email") as string;
   const name = formData.get("name") as string;
   const password = formData.get("password") as string;
+  const redirectUri = formData.get("redirect_uri");
 
   if (!email?.trim() || !name?.trim() || !password) {
     return { error: "Name, email, and password are required." };
@@ -34,5 +36,15 @@ export async function signUpWithEmail(
     throw error;
   }
 
-  redirect("/auth/sign-in?verify=1");
+  if (
+    typeof redirectUri === "string" &&
+    redirectUri &&
+    isAllowedDesktopRedirectUri(redirectUri)
+  ) {
+    redirect(
+      `/auth/desktop?redirect_uri=${encodeURIComponent(redirectUri)}&verify=1`,
+    );
+  }
+
+  redirect("/auth/sign-up?verify=1");
 }

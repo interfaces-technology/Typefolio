@@ -30,12 +30,12 @@ Open `Typefolio.xcodeproj` in Xcode, select an **iPad simulator**, and run.
 ## Auth flow (macOS)
 
 1. Click **Sign in with browser** in the app.
-2. Browser opens the Typefolio sign-in page on the **app** host (`NEXT_PUBLIC_APP_URL`).
+2. Browser opens **`{API}/auth/desktop`** (default API `http://127.0.0.1:43123`).
 3. After sign-in, the app stores a bearer token in Keychain.
 
 ## API endpoints used
 
-- `GET /auth/desktop` (browser sign-in — app host)
+- `GET /auth/desktop` (browser sign-in — API host)
 - `GET /api/me`
 - `GET /api/libraries/:id/manifest`
 - `GET /api/libraries/:id/fonts/:fontId`

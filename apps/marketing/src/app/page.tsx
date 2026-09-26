@@ -1,7 +1,7 @@
-function appUrl(path: string): string {
+function apiUrl(path: string): string {
   const base =
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    "http://127.0.0.1:43124";
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
+    "http://127.0.0.1:43123";
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
@@ -23,29 +23,23 @@ export default function MarketingHomePage() {
 
       <div className="flex flex-wrap gap-3">
         <a
-          href={appUrl("/auth/sign-up")}
+          href={apiUrl("/auth/sign-up")}
           className="inline-flex items-center justify-center rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-neutral-800"
         >
-          Get started
+          Create account
         </a>
         <a
-          href={appUrl("/auth/sign-in")}
+          href={apiUrl("/auth/desktop")}
           className="inline-flex items-center justify-center rounded-lg border border-neutral-300 px-5 py-2.5 text-sm font-medium hover:bg-neutral-50"
         >
-          Sign in
+          Sign in (Mac / iPad)
         </a>
       </div>
 
       <p className="text-sm text-neutral-500">
-        Product UI lives at{" "}
-        <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs">
-          apps/app
-        </code>{" "}
-        — this site is the marketing shell (
-        <code className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs">
-          apps/marketing
-        </code>
-        ).
+        The signed-in web library is being redesigned in Figma. Use the{" "}
+        <strong className="font-medium text-neutral-700">macOS app</strong> to sync
+        fonts after you create an account.
       </p>
     </div>
   );

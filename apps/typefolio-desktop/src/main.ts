@@ -5,7 +5,7 @@ import * as path from "path";
 import * as url from "url";
 
 import { apiRequest } from "./api";
-import { SYNC_INTERVAL_MS, WEB_APP_URL } from "./config";
+import { AUTH_WEB_URL, SYNC_INTERVAL_MS } from "./config";
 import { store } from "./store";
 import { syncFonts } from "./sync";
 
@@ -115,7 +115,7 @@ function runSync(): void {
 
 ipcMain.handle("sign-in", async () => {
   const redirectUri = encodeURIComponent("typefolio://auth/callback");
-  await shell.openExternal(`${WEB_APP_URL}/auth/desktop?redirect_uri=${redirectUri}`);
+  await shell.openExternal(`${AUTH_WEB_URL}/auth/desktop?redirect_uri=${redirectUri}`);
 });
 
 ipcMain.handle("sign-out", () => {
