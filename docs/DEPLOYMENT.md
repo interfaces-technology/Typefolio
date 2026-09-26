@@ -24,9 +24,10 @@ Each folder is **one Vercel project** with **Root Directory** set to that path (
 |----------------|---------------|-------------|------|
 | `typefolio-marketing` | `typefolio.app` | `turbo run build --filter=marketing` | Story, pricing, SEO; no DB |
 | `typefolio-api` | `api.typefolio.app` | `filter=api` | Webhooks, `/api/*`, native browser sign-in |
+| `typefolio-app` | `app.typefolio.app` | `filter=app` | Signed-in product web UI |
 | `typefolio-admin` | `admin.typefolio.app` | `filter=admin` | Ops (later) |
 
-**Note:** The product web app (`app.typefolio.app` / former `apps/app`) was removed while the UI is rebuilt in Figma. Account creation and Mac/iPad browser sign-in live on the **API** host (`/auth/sign-up`, `/auth/desktop`). A new Vercel project can be added when the redesigned web app ships.
+Native browser sign-in stays on the **API** host (`/auth/desktop`). The product app signs in through same-origin `/api` rewrites to the API. In production, set cookie domain to `.typefolio.app` so `app.typefolio.app` and `api.typefolio.app` share the Better Auth session.
 
 **Ignored Build Step** (each project): `npx turbo-ignore --fallback=HEAD^1`  
 **Build command** (each project): `cd ../.. && turbo run build --filter=<package-name>`
@@ -63,8 +64,9 @@ Marketing CTAs: `https://api.typefolio.app/auth/sign-up` (or marketing-only wait
 Configure Neon Auth / trusted origins for:
 
 - `https://typefolio.app` (marketing)
+- `https://app.typefolio.app` (product web UI)
 - `https://api.typefolio.app` (Better Auth + OAuth callbacks + `/auth/desktop`)
-- Preview URLs for marketing and api projects
+- Preview URLs for marketing, app, and api projects
 
 ## Environment variables
 
@@ -84,11 +86,12 @@ Each **deployment** inherits from its **project** env for Production / Preview /
 
 ### Per-project URLs (Production example)
 
-| Variable | Marketing | API |
-|----------|-----------|-----|
-| `NEXT_PUBLIC_MARKETING_URL` | `https://typefolio.app` | `https://typefolio.app` |
-| `NEXT_PUBLIC_API_URL` | `https://api.typefolio.app` (CTA links) | — |
-| `BETTER_AUTH_URL` | — | `https://api.typefolio.app` |
+| Variable | Marketing | App | API |
+|----------|-----------|-----|-----|
+| `NEXT_PUBLIC_MARKETING_URL` | `https://typefolio.app` | `https://typefolio.app` | `https://typefolio.app` |
+| `NEXT_PUBLIC_APP_URL` | — | `https://app.typefolio.app` | `https://app.typefolio.app` |
+| `NEXT_PUBLIC_API_URL` | `https://api.typefolio.app` (CTA links) | `https://api.typefolio.app` | — |
+| `BETTER_AUTH_URL` | — | — | `https://api.typefolio.app` |
 
 ### Local dev
 

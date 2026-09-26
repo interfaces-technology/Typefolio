@@ -10,17 +10,17 @@ Turborepo: shared core + API + marketing + native clients. Fonts live in Vercel 
 ```
 packages/core/          @typefolio/core — DB, auth, billing, storage, entitlements
 apps/api/               @typefolio/api — /api/*, webhooks, Better Auth, /auth/desktop
+apps/app/               @typefolio/app — signed-in product web UI
 apps/marketing/         @typefolio/marketing — landing & pricing shell
 apps/typefolio-native/  SwiftUI macOS + iPadOS
 ```
-
-The signed-in **product web UI** is being redesigned in Figma (former `apps/app` removed from the repo).
 
 ## Local ports
 
 | Package | Port |
 |---------|------|
 | API | 43123 |
+| App | 43124 |
 | Marketing | 43125 |
 
 ## Where new things go
@@ -32,7 +32,7 @@ The signed-in **product web UI** is being redesigned in Figma (former `apps/app`
 | Marketing page | `apps/marketing/src/app/` |
 | Shared server logic | `packages/core/src/lib/` |
 | Native SwiftUI | `apps/typefolio-native/Shared/`, `macOS/`, `iOS/` |
-| Future product web UI | New app or restored package when Figma → code lands |
+| Product web UI | `apps/app/src/` |
 
 ## Auth
 

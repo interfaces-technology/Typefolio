@@ -1,16 +1,20 @@
-/** Public marketing site (landing, pricing). Product web UI is rebuilt separately. */
+/** Public marketing site (landing, pricing). */
 export function getMarketingOrigin(): string {
   const configured =
     process.env.NEXT_PUBLIC_MARKETING_URL?.trim() ||
-    process.env.APP_URL?.trim() ||
     "http://127.0.0.1:43125";
 
   return configured.replace(/\/$/, "");
 }
 
-/** @deprecated Use getMarketingOrigin() for user-facing redirects. */
+/** Signed-in product web UI. */
 export function getAppOrigin(): string {
-  return getMarketingOrigin();
+  const configured =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    process.env.APP_URL?.trim() ||
+    "http://127.0.0.1:43124";
+
+  return configured.replace(/\/$/, "");
 }
 
 export function getAuthBaseUrl(): string {

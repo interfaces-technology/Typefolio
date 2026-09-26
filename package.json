@@ -4,12 +4,14 @@
   "private": true,
   "workspaces": [
     "apps/api",
+    "apps/app",
     "apps/marketing",
     "packages/core"
   ],
   "scripts": {
     "dev": "turbo run dev",
     "dev:api": "npm run dev -w @typefolio/api",
+    "dev:app": "npm run dev -w @typefolio/app",
     "dev:marketing": "npm run dev -w @typefolio/marketing",
     "dev:native": "bash scripts/dev-all.sh",
     "build": "turbo run build",

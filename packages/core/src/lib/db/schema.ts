@@ -31,6 +31,35 @@ export const libraries = pgTable(
   ],
 );
 
+export const fontFamilies = pgTable(
+  "font_families",
+  {
+    id: text("id").primaryKey(),
+    libraryId: text("library_id")
+      .notNull()
+      .references(() => libraries.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    foundry: text("foundry"),
+    version: text("version"),
+    classification: text("classification"),
+    mood: jsonb("mood").$type<string[]>().notNull().default([]),
+    license: text("license"),
+    source: text("source"),
+    languages: jsonb("languages").$type<string[]>().notNull().default([]),
+    glyphCount: integer("glyph_count"),
+    favoritedAt: timestamptz("favorited_at"),
+    editedFields: jsonb("edited_fields").$type<string[]>().notNull().default([]),
+    createdAt: timestamptz("created_at").notNull(),
+    updatedAt: timestamptz("updated_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("font_families_library_slug_idx").on(table.libraryId, table.slug),
+    index("font_families_library_id_idx").on(table.libraryId),
+    index("font_families_library_name_idx").on(table.libraryId, table.name),
+  ],
+);
+
 export const fonts = pgTable(
   "fonts",
   {
@@ -38,6 +67,9 @@ export const fonts = pgTable(
     libraryId: text("library_id")
       .notNull()
       .references(() => libraries.id, { onDelete: "cascade" }),
+    familyId: text("family_id").references(() => fontFamilies.id, {
+      onDelete: "set null",
+    }),
     originalName: text("original_name").notNull(),
     storedName: text("stored_name").notNull(),
     blobUrl: text("blob_url").notNull(),
@@ -55,6 +87,7 @@ export const fonts = pgTable(
   },
   (table) => [
     index("fonts_library_id_idx").on(table.libraryId),
+    index("fonts_family_id_idx").on(table.familyId),
     index("fonts_library_family_name_idx").on(table.libraryId, table.familyName),
   ],
 );
@@ -86,9 +119,149 @@ export const devices = pgTable(
   ],
 );
 
+export const collections = pgTable(
+  "collections",
+  {
+    id: text("id").primaryKey(),
+    libraryId: text("library_id")
+      .notNull()
+      .references(() => libraries.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    createdAt: timestamptz("created_at").notNull(),
+    updatedAt: timestamptz("updated_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("collections_library_slug_idx").on(table.libraryId, table.slug),
+    index("collections_library_id_idx").on(table.libraryId),
+  ],
+);
+
+export const collectionItems = pgTable(
+  "collection_items",
+  {
+    id: text("id").primaryKey(),
+    collectionId: text("collection_id")
+      .notNull()
+      .references(() => collections.id, { onDelete: "cascade" }),
+    itemType: text("item_type").notNull(),
+    itemId: text("item_id"),
+    noteBody: text("note_body"),
+    position: integer("position").notNull().default(0),
+  },
+  (table) => [
+    index("collection_items_collection_id_idx").on(table.collectionId),
+  ],
+);
+
+export const references = pgTable(
+  "references",
+  {
+    id: text("id").primaryKey(),
+    libraryId: text("library_id")
+      .notNull()
+      .references(() => libraries.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    title: text("title").notNull(),
+    category: text("category"),
+    year: integer("year"),
+    description: text("description"),
+    imageUrl: text("image_url").notNull(),
+    imagePathname: text("image_pathname").notNull(),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    createdAt: timestamptz("created_at").notNull(),
+    updatedAt: timestamptz("updated_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("references_library_slug_idx").on(table.libraryId, table.slug),
+    index("references_library_id_idx").on(table.libraryId),
+  ],
+);
+
+export const referenceFonts = pgTable(
+  "reference_fonts",
+  {
+    id: text("id").primaryKey(),
+    referenceId: text("reference_id")
+      .notNull()
+      .references(() => references.id, { onDelete: "cascade" }),
+    familyId: text("family_id")
+      .notNull()
+      .references(() => fontFamilies.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("related"),
+  },
+  (table) => [
+    uniqueIndex("reference_fonts_pair_idx").on(table.referenceId, table.familyId),
+    index("reference_fonts_family_id_idx").on(table.familyId),
+  ],
+);
+
+export const favorites = pgTable(
+  "favorites",
+  {
+    id: text("id").primaryKey(),
+    libraryId: text("library_id")
+      .notNull()
+      .references(() => libraries.id, { onDelete: "cascade" }),
+    itemType: text("item_type").notNull(),
+    itemId: text("item_id").notNull(),
+    createdAt: timestamptz("created_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("favorites_library_item_idx").on(
+      table.libraryId,
+      table.itemType,
+      table.itemId,
+    ),
+    index("favorites_library_id_idx").on(table.libraryId),
+  ],
+);
+
+export const activityEvents = pgTable(
+  "activity_events",
+  {
+    id: text("id").primaryKey(),
+    libraryId: text("library_id")
+      .notNull()
+      .references(() => libraries.id, { onDelete: "cascade" }),
+    occurredAt: timestamptz("occurred_at").notNull(),
+    action: text("action").notNull(),
+    itemName: text("item_name").notNull(),
+    deviceId: text("device_id"),
+  },
+  (table) => [index("activity_events_library_occurred_idx").on(table.libraryId, table.occurredAt)],
+);
+
+export const shareLinks = pgTable(
+  "share_links",
+  {
+    id: text("id").primaryKey(),
+    libraryId: text("library_id")
+      .notNull()
+      .references(() => libraries.id, { onDelete: "cascade" }),
+    resourceType: text("resource_type").notNull(),
+    resourceId: text("resource_id").notNull(),
+    token: text("token").notNull(),
+    visibility: text("visibility").notNull().default("link"),
+    createdAt: timestamptz("created_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("share_links_token_idx").on(table.token),
+    index("share_links_library_id_idx").on(table.libraryId),
+  ],
+);
+
 export type LibraryRow = typeof libraries.$inferSelect;
+export type FontFamilyRow = typeof fontFamilies.$inferSelect;
 export type FontRow = typeof fonts.$inferSelect;
 export type DeviceRow = typeof devices.$inferSelect;
+export type CollectionRow = typeof collections.$inferSelect;
+export type CollectionItemRow = typeof collectionItems.$inferSelect;
+export type ReferenceRow = typeof references.$inferSelect;
+export type FavoriteRow = typeof favorites.$inferSelect;
+export type ActivityEventRow = typeof activityEvents.$inferSelect;
+export type ShareLinkRow = typeof shareLinks.$inferSelect;
 
 export const desktopAuthCodes = pgTable(
   "desktop_auth_codes",

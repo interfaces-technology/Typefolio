@@ -4,12 +4,15 @@ import { del, get, put } from "@vercel/blob";
 import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
+import { logActivity } from "@typefolio/core/activity";
 import { getDb } from "@typefolio/core/db";
 import { devices, fonts, libraries } from "@typefolio/core/db/schema";
 import { getUserEntitlement } from "@typefolio/core/entitlements";
+import { backfillFamilies, ensureFamilyForName, listFamilies } from "@typefolio/core/families";
 import { groupFontsByFamily } from "@typefolio/core/font-families";
 import { extractFontMetadata } from "@typefolio/core/font-metadata";
 import { getFontExtension, isAllowedFontFile } from "@typefolio/core/font-validation";
+import { listReferenceBlobs } from "@typefolio/core/references";
 import { generateSyncCode } from "@typefolio/core/sync-code";
 import type {
   CreateLibraryInput,
@@ -35,6 +38,7 @@ function fontPathname(libraryId: string, storedName: string): string {
 function toFontFile(row: typeof fonts.$inferSelect): FontFile {
   return {
     id: row.id,
+    familyId: row.familyId ?? undefined,
     originalName: row.originalName,
     storedName: row.storedName,
     sha256: row.sha256,
@@ -252,10 +256,14 @@ export async function deleteLibrary(libraryId: string): Promise<boolean> {
     .from(fonts)
     .where(eq(fonts.libraryId, libraryId));
 
-  const blobTargets = fontRows.flatMap((font) => [
-    font.blobUrl,
-    font.blobPathname,
-  ]);
+  const referenceRows = await listReferenceBlobs(libraryId);
+  const blobTargets = [
+    ...fontRows.flatMap((font) => [font.blobUrl, font.blobPathname]),
+    ...referenceRows.flatMap((reference) => [
+      reference.imageUrl,
+      reference.imagePathname,
+    ]),
+  ];
   if (blobTargets.length > 0) {
     await del(blobTargets);
   }
@@ -325,6 +333,7 @@ export async function addFontsToLibrary(
     }
 
     const metadata = extractFontMetadata(buffer, file.name);
+    const family = await ensureFamilyForName(libraryId, metadata.familyName);
     const now = new Date().toISOString();
 
     if (existing) {
@@ -339,6 +348,7 @@ export async function addFontsToLibrary(
       await db
         .update(fonts)
         .set({
+          familyId: family.id,
           sha256,
           size: file.size,
           blobUrl: blob.url,
@@ -356,6 +366,7 @@ export async function addFontsToLibrary(
       updated.push(
         toFontFile({
           ...existing,
+          familyId: family.id,
           sha256,
           size: file.size,
           blobUrl: blob.url,
@@ -369,6 +380,11 @@ export async function addFontsToLibrary(
           uploadedAt: now,
         }),
       );
+      await logActivity({
+        libraryId,
+        action: "updated",
+        itemName: metadata.familyName,
+      });
       continue;
     }
 
@@ -385,6 +401,7 @@ export async function addFontsToLibrary(
     const fontRow = {
       id: fontId,
       libraryId,
+      familyId: family.id,
       originalName,
       storedName,
       blobUrl: blob.url,
@@ -403,6 +420,11 @@ export async function addFontsToLibrary(
 
     await db.insert(fonts).values(fontRow);
     added.push(toFontFile(fontRow));
+    await logActivity({
+      libraryId,
+      action: "added",
+      itemName: metadata.familyName,
+    });
   }
 
   if (added.length > 0 || updated.length > 0) {
@@ -443,6 +465,11 @@ export async function deleteFont(
     .update(libraries)
     .set({ updatedAt: new Date().toISOString() })
     .where(eq(libraries.id, libraryId));
+  await logActivity({
+    libraryId,
+    action: "removed",
+    itemName: font.familyName ?? font.originalName,
+  });
 
   return true;
 }
@@ -511,9 +538,22 @@ export async function getLibraryFontFamilies(
     return null;
   }
 
+  await backfillFamilies(libraryId);
+
   const sort = options.sortBy ?? "family";
   const order = options.order ?? "asc";
-  const families = groupFontsByFamily(library.fonts, { sortBy: sort, order });
+  const familyRecords = await listFamilies(libraryId, {
+    sort:
+      sort === "uploadedAt"
+        ? "newest"
+        : order === "desc"
+          ? "name-desc"
+          : "name-asc",
+  });
+  const families =
+    familyRecords.length > 0
+      ? familyRecords
+      : groupFontsByFamily(library.fonts, { sortBy: sort, order });
 
   return {
     libraryId: library.id,
